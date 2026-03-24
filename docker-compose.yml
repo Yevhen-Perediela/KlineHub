@@ -1,0 +1,128 @@
+version: "3.9"
+
+services:
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: marketdata-api
+    restart: always
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - postgres
+    command: >
+      sh -c "uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    expose:
+      - "8000"
+    volumes:
+      - ./backend:/app
+    networks:
+      - marketdata_net
+      - infra_internal
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8000/health || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: marketdata-frontend
+    restart: always
+    depends_on:
+      - api
+    expose:
+      - "3000"
+    networks:
+      - marketdata_net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000 || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  redis:
+    image: redis:7-alpine
+    container_name: marketdata-redis
+    restart: always
+    command: >
+      redis-server
+      --appendonly yes
+      --save 60 1000
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+    volumes:
+      - marketdata_redis_data:/data
+    expose:
+      - "6379"
+    networks:
+      - marketdata_net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: marketdata-postgres
+    restart: always
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-marketdata}
+      POSTGRES_USER: ${POSTGRES_USER:-marketdata}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-marketdata_pass}
+    volumes:
+      - marketdata_postgres_data:/var/lib/postgresql/data
+    expose:
+      - "5432"
+    networks:
+      - marketdata_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-marketdata} -d ${POSTGRES_DB:-marketdata}"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: marketdata-nginx
+    restart: always
+    depends_on:
+      - api
+      - frontend
+    ports:
+      - "127.0.0.1:8088:80"
+    volumes:
+      - ./deploy/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      # optional, only if you want basic auth for dashboard/internal pages
+      # - ./deploy/nginx/.htpasswd:/etc/nginx/.htpasswd:ro
+    networks:
+      - marketdata_net
+      - infra_internal
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/ || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  marketdata_redis_data:
+  marketdata_postgres_data:
+
+networks:
+  marketdata_net:
+    driver: bridge
+
+  # create this once on the server:
+  # docker network create infra_internal
+  infra_internal:
+    external: true
