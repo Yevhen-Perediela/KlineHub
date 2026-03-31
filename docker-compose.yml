@@ -20,7 +20,7 @@ services:
       - ./backend:/app
     networks:
       - marketdata_net
-      - infra_internal
+      - klinehub_internal
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8000/health || exit 1"]
       interval: 20s
@@ -106,7 +106,7 @@ services:
       # - ./deploy/nginx/.htpasswd:/etc/nginx/.htpasswd:ro
     networks:
       - marketdata_net
-      - infra_internal
+      - klinehub_internal
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/ || exit 1"]
       interval: 20s
@@ -124,5 +124,5 @@ networks:
 
   # create this once on the server:
   # docker network create infra_internal
-  infra_internal:
+  klinehub_internal:
     external: true

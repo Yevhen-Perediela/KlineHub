@@ -1,0 +1,6002 @@
+[
+  {
+    "rank": 1,
+    "base_asset": "BTC",
+    "quote_asset": "USDT",
+    "symbol": "BTCUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 1,
+    "base_asset": "BTC",
+    "quote_asset": "USDC",
+    "symbol": "BTCUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 2,
+    "base_asset": "ETH",
+    "quote_asset": "USDT",
+    "symbol": "ETHUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 2,
+    "base_asset": "ETH",
+    "quote_asset": "USDC",
+    "symbol": "ETHUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 3,
+    "base_asset": "BNB",
+    "quote_asset": "USDT",
+    "symbol": "BNBUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 3,
+    "base_asset": "BNB",
+    "quote_asset": "USDC",
+    "symbol": "BNBUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 4,
+    "base_asset": "XRP",
+    "quote_asset": "USDT",
+    "symbol": "XRPUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 4,
+    "base_asset": "XRP",
+    "quote_asset": "USDC",
+    "symbol": "XRPUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 5,
+    "base_asset": "SOL",
+    "quote_asset": "USDT",
+    "symbol": "SOLUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 5,
+    "base_asset": "SOL",
+    "quote_asset": "USDC",
+    "symbol": "SOLUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 6,
+    "base_asset": "DOGE",
+    "quote_asset": "USDT",
+    "symbol": "DOGEUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 6,
+    "base_asset": "DOGE",
+    "quote_asset": "USDC",
+    "symbol": "DOGEUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 7,
+    "base_asset": "ADA",
+    "quote_asset": "USDT",
+    "symbol": "ADAUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 7,
+    "base_asset": "ADA",
+    "quote_asset": "USDC",
+    "symbol": "ADAUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 8,
+    "base_asset": "TRX",
+    "quote_asset": "USDT",
+    "symbol": "TRXUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 8,
+    "base_asset": "TRX",
+    "quote_asset": "USDC",
+    "symbol": "TRXUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 9,
+    "base_asset": "LINK",
+    "quote_asset": "USDT",
+    "symbol": "LINKUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 9,
+    "base_asset": "LINK",
+    "quote_asset": "USDC",
+    "symbol": "LINKUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 10,
+    "base_asset": "AVAX",
+    "quote_asset": "USDT",
+    "symbol": "AVAXUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 10,
+    "base_asset": "AVAX",
+    "quote_asset": "USDC",
+    "symbol": "AVAXUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 11,
+    "base_asset": "XLM",
+    "quote_asset": "USDT",
+    "symbol": "XLMUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 11,
+    "base_asset": "XLM",
+    "quote_asset": "USDC",
+    "symbol": "XLMUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 12,
+    "base_asset": "SUI",
+    "quote_asset": "USDT",
+    "symbol": "SUIUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 12,
+    "base_asset": "SUI",
+    "quote_asset": "USDC",
+    "symbol": "SUIUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 13,
+    "base_asset": "HBAR",
+    "quote_asset": "USDT",
+    "symbol": "HBARUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 13,
+    "base_asset": "HBAR",
+    "quote_asset": "USDC",
+    "symbol": "HBARUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 14,
+    "base_asset": "BCH",
+    "quote_asset": "USDT",
+    "symbol": "BCHUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 14,
+    "base_asset": "BCH",
+    "quote_asset": "USDC",
+    "symbol": "BCHUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 15,
+    "base_asset": "LTC",
+    "quote_asset": "USDT",
+    "symbol": "LTCUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 15,
+    "base_asset": "LTC",
+    "quote_asset": "USDC",
+    "symbol": "LTCUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 16,
+    "base_asset": "TON",
+    "quote_asset": "USDT",
+    "symbol": "TONUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 16,
+    "base_asset": "TON",
+    "quote_asset": "USDC",
+    "symbol": "TONUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 17,
+    "base_asset": "DOT",
+    "quote_asset": "USDT",
+    "symbol": "DOTUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 17,
+    "base_asset": "DOT",
+    "quote_asset": "USDC",
+    "symbol": "DOTUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 18,
+    "base_asset": "UNI",
+    "quote_asset": "USDT",
+    "symbol": "UNIUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 18,
+    "base_asset": "UNI",
+    "quote_asset": "USDC",
+    "symbol": "UNIUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 19,
+    "base_asset": "PEPE",
+    "quote_asset": "USDT",
+    "symbol": "PEPEUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 19,
+    "base_asset": "PEPE",
+    "quote_asset": "USDC",
+    "symbol": "PEPEUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 20,
+    "base_asset": "APT",
+    "quote_asset": "USDT",
+    "symbol": "APTUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 20,
+    "base_asset": "APT",
+    "quote_asset": "USDC",
+    "symbol": "APTUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 21,
+    "base_asset": "TAO",
+    "quote_asset": "USDT",
+    "symbol": "TAOUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 21,
+    "base_asset": "TAO",
+    "quote_asset": "USDC",
+    "symbol": "TAOUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 22,
+    "base_asset": "NEAR",
+    "quote_asset": "USDT",
+    "symbol": "NEARUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 22,
+    "base_asset": "NEAR",
+    "quote_asset": "USDC",
+    "symbol": "NEARUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 23,
+    "base_asset": "ETC",
+    "quote_asset": "USDT",
+    "symbol": "ETCUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 23,
+    "base_asset": "ETC",
+    "quote_asset": "USDC",
+    "symbol": "ETCUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 24,
+    "base_asset": "ICP",
+    "quote_asset": "USDT",
+    "symbol": "ICPUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 24,
+    "base_asset": "ICP",
+    "quote_asset": "USDC",
+    "symbol": "ICPUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 25,
+    "base_asset": "VET",
+    "quote_asset": "USDT",
+    "symbol": "VETUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 25,
+    "base_asset": "VET",
+    "quote_asset": "USDC",
+    "symbol": "VETUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 26,
+    "base_asset": "FIL",
+    "quote_asset": "USDT",
+    "symbol": "FILUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 26,
+    "base_asset": "FIL",
+    "quote_asset": "USDC",
+    "symbol": "FILUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 27,
+    "base_asset": "ALGO",
+    "quote_asset": "USDT",
+    "symbol": "ALGOUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 27,
+    "base_asset": "ALGO",
+    "quote_asset": "USDC",
+    "symbol": "ALGOUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 28,
+    "base_asset": "XMR",
+    "quote_asset": "USDT",
+    "symbol": "XMRUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 28,
+    "base_asset": "XMR",
+    "quote_asset": "USDC",
+    "symbol": "XMRUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 29,
+    "base_asset": "AAVE",
+    "quote_asset": "USDT",
+    "symbol": "AAVEUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 29,
+    "base_asset": "AAVE",
+    "quote_asset": "USDC",
+    "symbol": "AAVEUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 30,
+    "base_asset": "ARB",
+    "quote_asset": "USDT",
+    "symbol": "ARBUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 30,
+    "base_asset": "ARB",
+    "quote_asset": "USDC",
+    "symbol": "ARBUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 31,
+    "base_asset": "OP",
+    "quote_asset": "USDT",
+    "symbol": "OPUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 31,
+    "base_asset": "OP",
+    "quote_asset": "USDC",
+    "symbol": "OPUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 32,
+    "base_asset": "ATOM",
+    "quote_asset": "USDT",
+    "symbol": "ATOMUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 32,
+    "base_asset": "ATOM",
+    "quote_asset": "USDC",
+    "symbol": "ATOMUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 33,
+    "base_asset": "FET",
+    "quote_asset": "USDT",
+    "symbol": "FETUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 33,
+    "base_asset": "FET",
+    "quote_asset": "USDC",
+    "symbol": "FETUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 34,
+    "base_asset": "INJ",
+    "quote_asset": "USDT",
+    "symbol": "INJUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 34,
+    "base_asset": "INJ",
+    "quote_asset": "USDC",
+    "symbol": "INJUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 35,
+    "base_asset": "GRT",
+    "quote_asset": "USDT",
+    "symbol": "GRTUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 35,
+    "base_asset": "GRT",
+    "quote_asset": "USDC",
+    "symbol": "GRTUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 36,
+    "base_asset": "RENDER",
+    "quote_asset": "USDT",
+    "symbol": "RENDERUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 36,
+    "base_asset": "RENDER",
+    "quote_asset": "USDC",
+    "symbol": "RENDERUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 37,
+    "base_asset": "BONK",
+    "quote_asset": "USDT",
+    "symbol": "BONKUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 37,
+    "base_asset": "BONK",
+    "quote_asset": "USDC",
+    "symbol": "BONKUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 38,
+    "base_asset": "SEI",
+    "quote_asset": "USDT",
+    "symbol": "SEIUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 38,
+    "base_asset": "SEI",
+    "quote_asset": "USDC",
+    "symbol": "SEIUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 39,
+    "base_asset": "JUP",
+    "quote_asset": "USDT",
+    "symbol": "JUPUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 39,
+    "base_asset": "JUP",
+    "quote_asset": "USDC",
+    "symbol": "JUPUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 40,
+    "base_asset": "WLD",
+    "quote_asset": "USDT",
+    "symbol": "WLDUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 40,
+    "base_asset": "WLD",
+    "quote_asset": "USDC",
+    "symbol": "WLDUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 41,
+    "base_asset": "TIA",
+    "quote_asset": "USDT",
+    "symbol": "TIAUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 41,
+    "base_asset": "TIA",
+    "quote_asset": "USDC",
+    "symbol": "TIAUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 42,
+    "base_asset": "IMX",
+    "quote_asset": "USDT",
+    "symbol": "IMXUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 42,
+    "base_asset": "IMX",
+    "quote_asset": "USDC",
+    "symbol": "IMXUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 43,
+    "base_asset": "ONDO",
+    "quote_asset": "USDT",
+    "symbol": "ONDOUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 43,
+    "base_asset": "ONDO",
+    "quote_asset": "USDC",
+    "symbol": "ONDOUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 44,
+    "base_asset": "ENA",
+    "quote_asset": "USDT",
+    "symbol": "ENAUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 44,
+    "base_asset": "ENA",
+    "quote_asset": "USDC",
+    "symbol": "ENAUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 45,
+    "base_asset": "PYTH",
+    "quote_asset": "USDT",
+    "symbol": "PYTHUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 45,
+    "base_asset": "PYTH",
+    "quote_asset": "USDC",
+    "symbol": "PYTHUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 46,
+    "base_asset": "FLOKI",
+    "quote_asset": "USDT",
+    "symbol": "FLOKIUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 46,
+    "base_asset": "FLOKI",
+    "quote_asset": "USDC",
+    "symbol": "FLOKIUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 47,
+    "base_asset": "THETA",
+    "quote_asset": "USDT",
+    "symbol": "THETAUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 47,
+    "base_asset": "THETA",
+    "quote_asset": "USDC",
+    "symbol": "THETAUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 48,
+    "base_asset": "JASMY",
+    "quote_asset": "USDT",
+    "symbol": "JASMYUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 48,
+    "base_asset": "JASMY",
+    "quote_asset": "USDC",
+    "symbol": "JASMYUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 49,
+    "base_asset": "EOS",
+    "quote_asset": "USDT",
+    "symbol": "EOSUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 49,
+    "base_asset": "EOS",
+    "quote_asset": "USDC",
+    "symbol": "EOSUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 50,
+    "base_asset": "MNT",
+    "quote_asset": "USDT",
+    "symbol": "MNTUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 50,
+    "base_asset": "MNT",
+    "quote_asset": "USDC",
+    "symbol": "MNTUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 51,
+    "base_asset": "QNT",
+    "quote_asset": "USDT",
+    "symbol": "QNTUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 51,
+    "base_asset": "QNT",
+    "quote_asset": "USDC",
+    "symbol": "QNTUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 52,
+    "base_asset": "SAND",
+    "quote_asset": "USDT",
+    "symbol": "SANDUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 52,
+    "base_asset": "SAND",
+    "quote_asset": "USDC",
+    "symbol": "SANDUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 53,
+    "base_asset": "MANA",
+    "quote_asset": "USDT",
+    "symbol": "MANAUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 53,
+    "base_asset": "MANA",
+    "quote_asset": "USDC",
+    "symbol": "MANAUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 54,
+    "base_asset": "BSV",
+    "quote_asset": "USDT",
+    "symbol": "BSVUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 54,
+    "base_asset": "BSV",
+    "quote_asset": "USDC",
+    "symbol": "BSVUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 55,
+    "base_asset": "KAS",
+    "quote_asset": "USDT",
+    "symbol": "KASUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 55,
+    "base_asset": "KAS",
+    "quote_asset": "USDC",
+    "symbol": "KASUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 56,
+    "base_asset": "MKR",
+    "quote_asset": "USDT",
+    "symbol": "MKRUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 56,
+    "base_asset": "MKR",
+    "quote_asset": "USDC",
+    "symbol": "MKRUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 57,
+    "base_asset": "STX",
+    "quote_asset": "USDT",
+    "symbol": "STXUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 57,
+    "base_asset": "STX",
+    "quote_asset": "USDC",
+    "symbol": "STXUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 58,
+    "base_asset": "GALA",
+    "quote_asset": "USDT",
+    "symbol": "GALAUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 58,
+    "base_asset": "GALA",
+    "quote_asset": "USDC",
+    "symbol": "GALAUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 59,
+    "base_asset": "ZEC",
+    "quote_asset": "USDT",
+    "symbol": "ZECUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 59,
+    "base_asset": "ZEC",
+    "quote_asset": "USDC",
+    "symbol": "ZECUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 60,
+    "base_asset": "CRV",
+    "quote_asset": "USDT",
+    "symbol": "CRVUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 60,
+    "base_asset": "CRV",
+    "quote_asset": "USDC",
+    "symbol": "CRVUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 61,
+    "base_asset": "WIF",
+    "quote_asset": "USDT",
+    "symbol": "WIFUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 61,
+    "base_asset": "WIF",
+    "quote_asset": "USDC",
+    "symbol": "WIFUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 62,
+    "base_asset": "LDO",
+    "quote_asset": "USDT",
+    "symbol": "LDOUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 62,
+    "base_asset": "LDO",
+    "quote_asset": "USDC",
+    "symbol": "LDOUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 63,
+    "base_asset": "NEO",
+    "quote_asset": "USDT",
+    "symbol": "NEOUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 63,
+    "base_asset": "NEO",
+    "quote_asset": "USDC",
+    "symbol": "NEOUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 64,
+    "base_asset": "ENS",
+    "quote_asset": "USDT",
+    "symbol": "ENSUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 64,
+    "base_asset": "ENS",
+    "quote_asset": "USDC",
+    "symbol": "ENSUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 65,
+    "base_asset": "FLOW",
+    "quote_asset": "USDT",
+    "symbol": "FLOWUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 65,
+    "base_asset": "FLOW",
+    "quote_asset": "USDC",
+    "symbol": "FLOWUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 66,
+    "base_asset": "PENDLE",
+    "quote_asset": "USDT",
+    "symbol": "PENDLEUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 66,
+    "base_asset": "PENDLE",
+    "quote_asset": "USDC",
+    "symbol": "PENDLEUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 67,
+    "base_asset": "PAXG",
+    "quote_asset": "USDT",
+    "symbol": "PAXGUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 67,
+    "base_asset": "PAXG",
+    "quote_asset": "USDC",
+    "symbol": "PAXGUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 68,
+    "base_asset": "XDC",
+    "quote_asset": "USDT",
+    "symbol": "XDCUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 68,
+    "base_asset": "XDC",
+    "quote_asset": "USDC",
+    "symbol": "XDCUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 69,
+    "base_asset": "EGLD",
+    "quote_asset": "USDT",
+    "symbol": "EGLDUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 69,
+    "base_asset": "EGLD",
+    "quote_asset": "USDC",
+    "symbol": "EGLDUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 70,
+    "base_asset": "RUNE",
+    "quote_asset": "USDT",
+    "symbol": "RUNEUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 70,
+    "base_asset": "RUNE",
+    "quote_asset": "USDC",
+    "symbol": "RUNEUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 71,
+    "base_asset": "AXS",
+    "quote_asset": "USDT",
+    "symbol": "AXSUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 71,
+    "base_asset": "AXS",
+    "quote_asset": "USDC",
+    "symbol": "AXSUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 72,
+    "base_asset": "HNT",
+    "quote_asset": "USDT",
+    "symbol": "HNTUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 72,
+    "base_asset": "HNT",
+    "quote_asset": "USDC",
+    "symbol": "HNTUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 73,
+    "base_asset": "BEAM",
+    "quote_asset": "USDT",
+    "symbol": "BEAMUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 73,
+    "base_asset": "BEAM",
+    "quote_asset": "USDC",
+    "symbol": "BEAMUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 74,
+    "base_asset": "COMP",
+    "quote_asset": "USDT",
+    "symbol": "COMPUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 74,
+    "base_asset": "COMP",
+    "quote_asset": "USDC",
+    "symbol": "COMPUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 75,
+    "base_asset": "CHZ",
+    "quote_asset": "USDT",
+    "symbol": "CHZUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 75,
+    "base_asset": "CHZ",
+    "quote_asset": "USDC",
+    "symbol": "CHZUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 76,
+    "base_asset": "APE",
+    "quote_asset": "USDT",
+    "symbol": "APEUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 76,
+    "base_asset": "APE",
+    "quote_asset": "USDC",
+    "symbol": "APEUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 77,
+    "base_asset": "AKT",
+    "quote_asset": "USDT",
+    "symbol": "AKTUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 77,
+    "base_asset": "AKT",
+    "quote_asset": "USDC",
+    "symbol": "AKTUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 78,
+    "base_asset": "SUPER",
+    "quote_asset": "USDT",
+    "symbol": "SUPERUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 78,
+    "base_asset": "SUPER",
+    "quote_asset": "USDC",
+    "symbol": "SUPERUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 79,
+    "base_asset": "AMP",
+    "quote_asset": "USDT",
+    "symbol": "AMPUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 79,
+    "base_asset": "AMP",
+    "quote_asset": "USDC",
+    "symbol": "AMPUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 80,
+    "base_asset": "KAVA",
+    "quote_asset": "USDT",
+    "symbol": "KAVAUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 80,
+    "base_asset": "KAVA",
+    "quote_asset": "USDC",
+    "symbol": "KAVAUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 81,
+    "base_asset": "CAKE",
+    "quote_asset": "USDT",
+    "symbol": "CAKEUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 81,
+    "base_asset": "CAKE",
+    "quote_asset": "USDC",
+    "symbol": "CAKEUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 82,
+    "base_asset": "SNX",
+    "quote_asset": "USDT",
+    "symbol": "SNXUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 82,
+    "base_asset": "SNX",
+    "quote_asset": "USDC",
+    "symbol": "SNXUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 83,
+    "base_asset": "RAY",
+    "quote_asset": "USDT",
+    "symbol": "RAYUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 83,
+    "base_asset": "RAY",
+    "quote_asset": "USDC",
+    "symbol": "RAYUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 84,
+    "base_asset": "DYDX",
+    "quote_asset": "USDT",
+    "symbol": "DYDXUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 84,
+    "base_asset": "DYDX",
+    "quote_asset": "USDC",
+    "symbol": "DYDXUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 85,
+    "base_asset": "1INCH",
+    "quote_asset": "USDT",
+    "symbol": "1INCHUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 85,
+    "base_asset": "1INCH",
+    "quote_asset": "USDC",
+    "symbol": "1INCHUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 86,
+    "base_asset": "KSM",
+    "quote_asset": "USDT",
+    "symbol": "KSMUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 86,
+    "base_asset": "KSM",
+    "quote_asset": "USDC",
+    "symbol": "KSMUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 87,
+    "base_asset": "DASH",
+    "quote_asset": "USDT",
+    "symbol": "DASHUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 87,
+    "base_asset": "DASH",
+    "quote_asset": "USDC",
+    "symbol": "DASHUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 88,
+    "base_asset": "CELO",
+    "quote_asset": "USDT",
+    "symbol": "CELOUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 88,
+    "base_asset": "CELO",
+    "quote_asset": "USDC",
+    "symbol": "CELOUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 89,
+    "base_asset": "IOTX",
+    "quote_asset": "USDT",
+    "symbol": "IOTXUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 89,
+    "base_asset": "IOTX",
+    "quote_asset": "USDC",
+    "symbol": "IOTXUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 90,
+    "base_asset": "ZRO",
+    "quote_asset": "USDT",
+    "symbol": "ZROUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 90,
+    "base_asset": "ZRO",
+    "quote_asset": "USDC",
+    "symbol": "ZROUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 91,
+    "base_asset": "ZK",
+    "quote_asset": "USDT",
+    "symbol": "ZKUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 91,
+    "base_asset": "ZK",
+    "quote_asset": "USDC",
+    "symbol": "ZKUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 92,
+    "base_asset": "STRK",
+    "quote_asset": "USDT",
+    "symbol": "STRKUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 92,
+    "base_asset": "STRK",
+    "quote_asset": "USDC",
+    "symbol": "STRKUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 93,
+    "base_asset": "SUSHI",
+    "quote_asset": "USDT",
+    "symbol": "SUSHIUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 93,
+    "base_asset": "SUSHI",
+    "quote_asset": "USDC",
+    "symbol": "SUSHIUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 94,
+    "base_asset": "BAT",
+    "quote_asset": "USDT",
+    "symbol": "BATUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 94,
+    "base_asset": "BAT",
+    "quote_asset": "USDC",
+    "symbol": "BATUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 95,
+    "base_asset": "ZIL",
+    "quote_asset": "USDT",
+    "symbol": "ZILUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 95,
+    "base_asset": "ZIL",
+    "quote_asset": "USDC",
+    "symbol": "ZILUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 96,
+    "base_asset": "MASK",
+    "quote_asset": "USDT",
+    "symbol": "MASKUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 96,
+    "base_asset": "MASK",
+    "quote_asset": "USDC",
+    "symbol": "MASKUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 97,
+    "base_asset": "BLUR",
+    "quote_asset": "USDT",
+    "symbol": "BLURUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 97,
+    "base_asset": "BLUR",
+    "quote_asset": "USDC",
+    "symbol": "BLURUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 98,
+    "base_asset": "YFI",
+    "quote_asset": "USDT",
+    "symbol": "YFIUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 98,
+    "base_asset": "YFI",
+    "quote_asset": "USDC",
+    "symbol": "YFIUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 99,
+    "base_asset": "GMT",
+    "quote_asset": "USDT",
+    "symbol": "GMTUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 99,
+    "base_asset": "GMT",
+    "quote_asset": "USDC",
+    "symbol": "GMTUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 100,
+    "base_asset": "ANKR",
+    "quote_asset": "USDT",
+    "symbol": "ANKRUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 100,
+    "base_asset": "ANKR",
+    "quote_asset": "USDC",
+    "symbol": "ANKRUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 101,
+    "base_asset": "CFX",
+    "quote_asset": "USDT",
+    "symbol": "CFXUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 101,
+    "base_asset": "CFX",
+    "quote_asset": "USDC",
+    "symbol": "CFXUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 102,
+    "base_asset": "HOT",
+    "quote_asset": "USDT",
+    "symbol": "HOTUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 102,
+    "base_asset": "HOT",
+    "quote_asset": "USDC",
+    "symbol": "HOTUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 103,
+    "base_asset": "QTUM",
+    "quote_asset": "USDT",
+    "symbol": "QTUMUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 103,
+    "base_asset": "QTUM",
+    "quote_asset": "USDC",
+    "symbol": "QTUMUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 104,
+    "base_asset": "TWT",
+    "quote_asset": "USDT",
+    "symbol": "TWTUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 104,
+    "base_asset": "TWT",
+    "quote_asset": "USDC",
+    "symbol": "TWTUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 105,
+    "base_asset": "DYM",
+    "quote_asset": "USDT",
+    "symbol": "DYMUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 105,
+    "base_asset": "DYM",
+    "quote_asset": "USDC",
+    "symbol": "DYMUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 106,
+    "base_asset": "ALT",
+    "quote_asset": "USDT",
+    "symbol": "ALTUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 106,
+    "base_asset": "ALT",
+    "quote_asset": "USDC",
+    "symbol": "ALTUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 107,
+    "base_asset": "AI",
+    "quote_asset": "USDT",
+    "symbol": "AIUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 107,
+    "base_asset": "AI",
+    "quote_asset": "USDC",
+    "symbol": "AIUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 108,
+    "base_asset": "ACE",
+    "quote_asset": "USDT",
+    "symbol": "ACEUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 108,
+    "base_asset": "ACE",
+    "quote_asset": "USDC",
+    "symbol": "ACEUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 109,
+    "base_asset": "NTRN",
+    "quote_asset": "USDT",
+    "symbol": "NTRNUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 109,
+    "base_asset": "NTRN",
+    "quote_asset": "USDC",
+    "symbol": "NTRNUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 110,
+    "base_asset": "MEW",
+    "quote_asset": "USDT",
+    "symbol": "MEWUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 110,
+    "base_asset": "MEW",
+    "quote_asset": "USDC",
+    "symbol": "MEWUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 111,
+    "base_asset": "MEME",
+    "quote_asset": "USDT",
+    "symbol": "MEMEUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 111,
+    "base_asset": "MEME",
+    "quote_asset": "USDC",
+    "symbol": "MEMEUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 112,
+    "base_asset": "NOT",
+    "quote_asset": "USDT",
+    "symbol": "NOTUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 112,
+    "base_asset": "NOT",
+    "quote_asset": "USDC",
+    "symbol": "NOTUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 113,
+    "base_asset": "TURBO",
+    "quote_asset": "USDT",
+    "symbol": "TURBOUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 113,
+    "base_asset": "TURBO",
+    "quote_asset": "USDC",
+    "symbol": "TURBOUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 114,
+    "base_asset": "COTI",
+    "quote_asset": "USDT",
+    "symbol": "COTIUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 114,
+    "base_asset": "COTI",
+    "quote_asset": "USDC",
+    "symbol": "COTIUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 115,
+    "base_asset": "IDEX",
+    "quote_asset": "USDT",
+    "symbol": "IDEXUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 115,
+    "base_asset": "IDEX",
+    "quote_asset": "USDC",
+    "symbol": "IDEXUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 116,
+    "base_asset": "REQ",
+    "quote_asset": "USDT",
+    "symbol": "REQUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 116,
+    "base_asset": "REQ",
+    "quote_asset": "USDC",
+    "symbol": "REQUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 117,
+    "base_asset": "RVN",
+    "quote_asset": "USDT",
+    "symbol": "RVNUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 117,
+    "base_asset": "RVN",
+    "quote_asset": "USDC",
+    "symbol": "RVNUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 118,
+    "base_asset": "ROSE",
+    "quote_asset": "USDT",
+    "symbol": "ROSEUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 118,
+    "base_asset": "ROSE",
+    "quote_asset": "USDC",
+    "symbol": "ROSEUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 119,
+    "base_asset": "OXT",
+    "quote_asset": "USDT",
+    "symbol": "OXTUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 119,
+    "base_asset": "OXT",
+    "quote_asset": "USDC",
+    "symbol": "OXTUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 120,
+    "base_asset": "SKL",
+    "quote_asset": "USDT",
+    "symbol": "SKLUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 120,
+    "base_asset": "SKL",
+    "quote_asset": "USDC",
+    "symbol": "SKLUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 121,
+    "base_asset": "LRC",
+    "quote_asset": "USDT",
+    "symbol": "LRCUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 121,
+    "base_asset": "LRC",
+    "quote_asset": "USDC",
+    "symbol": "LRCUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 122,
+    "base_asset": "WAVES",
+    "quote_asset": "USDT",
+    "symbol": "WAVESUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 122,
+    "base_asset": "WAVES",
+    "quote_asset": "USDC",
+    "symbol": "WAVESUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 123,
+    "base_asset": "ICX",
+    "quote_asset": "USDT",
+    "symbol": "ICXUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 123,
+    "base_asset": "ICX",
+    "quote_asset": "USDC",
+    "symbol": "ICXUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 124,
+    "base_asset": "ONE",
+    "quote_asset": "USDT",
+    "symbol": "ONEUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 124,
+    "base_asset": "ONE",
+    "quote_asset": "USDC",
+    "symbol": "ONEUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 125,
+    "base_asset": "ZEN",
+    "quote_asset": "USDT",
+    "symbol": "ZENUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 125,
+    "base_asset": "ZEN",
+    "quote_asset": "USDC",
+    "symbol": "ZENUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 126,
+    "base_asset": "KNC",
+    "quote_asset": "USDT",
+    "symbol": "KNCUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 126,
+    "base_asset": "KNC",
+    "quote_asset": "USDC",
+    "symbol": "KNCUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 127,
+    "base_asset": "KDA",
+    "quote_asset": "USDT",
+    "symbol": "KDAUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 127,
+    "base_asset": "KDA",
+    "quote_asset": "USDC",
+    "symbol": "KDAUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 128,
+    "base_asset": "AR",
+    "quote_asset": "USDT",
+    "symbol": "ARUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 128,
+    "base_asset": "AR",
+    "quote_asset": "USDC",
+    "symbol": "ARUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 129,
+    "base_asset": "ORDI",
+    "quote_asset": "USDT",
+    "symbol": "ORDIUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 129,
+    "base_asset": "ORDI",
+    "quote_asset": "USDC",
+    "symbol": "ORDIUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 130,
+    "base_asset": "1000SATS",
+    "quote_asset": "USDT",
+    "symbol": "1000SATSUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 130,
+    "base_asset": "1000SATS",
+    "quote_asset": "USDC",
+    "symbol": "1000SATSUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 131,
+    "base_asset": "BOME",
+    "quote_asset": "USDT",
+    "symbol": "BOMEUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 131,
+    "base_asset": "BOME",
+    "quote_asset": "USDC",
+    "symbol": "BOMEUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 132,
+    "base_asset": "MAGIC",
+    "quote_asset": "USDT",
+    "symbol": "MAGICUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 132,
+    "base_asset": "MAGIC",
+    "quote_asset": "USDC",
+    "symbol": "MAGICUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 133,
+    "base_asset": "CTSI",
+    "quote_asset": "USDT",
+    "symbol": "CTSIUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 133,
+    "base_asset": "CTSI",
+    "quote_asset": "USDC",
+    "symbol": "CTSIUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 134,
+    "base_asset": "GLM",
+    "quote_asset": "USDT",
+    "symbol": "GLMUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 134,
+    "base_asset": "GLM",
+    "quote_asset": "USDC",
+    "symbol": "GLMUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 135,
+    "base_asset": "POL",
+    "quote_asset": "USDT",
+    "symbol": "POLUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 135,
+    "base_asset": "POL",
+    "quote_asset": "USDC",
+    "symbol": "POLUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 136,
+    "base_asset": "MINA",
+    "quote_asset": "USDT",
+    "symbol": "MINAUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 136,
+    "base_asset": "MINA",
+    "quote_asset": "USDC",
+    "symbol": "MINAUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 137,
+    "base_asset": "ASTR",
+    "quote_asset": "USDT",
+    "symbol": "ASTRUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 137,
+    "base_asset": "ASTR",
+    "quote_asset": "USDC",
+    "symbol": "ASTRUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 138,
+    "base_asset": "XAI",
+    "quote_asset": "USDT",
+    "symbol": "XAIUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 138,
+    "base_asset": "XAI",
+    "quote_asset": "USDC",
+    "symbol": "XAIUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 139,
+    "base_asset": "SXP",
+    "quote_asset": "USDT",
+    "symbol": "SXPUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 139,
+    "base_asset": "SXP",
+    "quote_asset": "USDC",
+    "symbol": "SXPUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 140,
+    "base_asset": "WOO",
+    "quote_asset": "USDT",
+    "symbol": "WOOUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 140,
+    "base_asset": "WOO",
+    "quote_asset": "USDC",
+    "symbol": "WOOUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 141,
+    "base_asset": "TRB",
+    "quote_asset": "USDT",
+    "symbol": "TRBUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 141,
+    "base_asset": "TRB",
+    "quote_asset": "USDC",
+    "symbol": "TRBUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 142,
+    "base_asset": "API3",
+    "quote_asset": "USDT",
+    "symbol": "API3USDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 142,
+    "base_asset": "API3",
+    "quote_asset": "USDC",
+    "symbol": "API3USDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 143,
+    "base_asset": "GMX",
+    "quote_asset": "USDT",
+    "symbol": "GMXUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 143,
+    "base_asset": "GMX",
+    "quote_asset": "USDC",
+    "symbol": "GMXUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 144,
+    "base_asset": "UMA",
+    "quote_asset": "USDT",
+    "symbol": "UMAUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 144,
+    "base_asset": "UMA",
+    "quote_asset": "USDC",
+    "symbol": "UMAUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 145,
+    "base_asset": "XVG",
+    "quote_asset": "USDT",
+    "symbol": "XVGUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 145,
+    "base_asset": "XVG",
+    "quote_asset": "USDC",
+    "symbol": "XVGUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 146,
+    "base_asset": "CKB",
+    "quote_asset": "USDT",
+    "symbol": "CKBUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 146,
+    "base_asset": "CKB",
+    "quote_asset": "USDC",
+    "symbol": "CKBUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 147,
+    "base_asset": "IO",
+    "quote_asset": "USDT",
+    "symbol": "IOUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 147,
+    "base_asset": "IO",
+    "quote_asset": "USDC",
+    "symbol": "IOUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 148,
+    "base_asset": "PEOPLE",
+    "quote_asset": "USDT",
+    "symbol": "PEOPLEUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 148,
+    "base_asset": "PEOPLE",
+    "quote_asset": "USDC",
+    "symbol": "PEOPLEUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 149,
+    "base_asset": "DUSK",
+    "quote_asset": "USDT",
+    "symbol": "DUSKUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 149,
+    "base_asset": "DUSK",
+    "quote_asset": "USDC",
+    "symbol": "DUSKUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 150,
+    "base_asset": "SSV",
+    "quote_asset": "USDT",
+    "symbol": "SSVUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 150,
+    "base_asset": "SSV",
+    "quote_asset": "USDC",
+    "symbol": "SSVUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 151,
+    "base_asset": "ILV",
+    "quote_asset": "USDT",
+    "symbol": "ILVUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 151,
+    "base_asset": "ILV",
+    "quote_asset": "USDC",
+    "symbol": "ILVUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 152,
+    "base_asset": "NFP",
+    "quote_asset": "USDT",
+    "symbol": "NFPUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 152,
+    "base_asset": "NFP",
+    "quote_asset": "USDC",
+    "symbol": "NFPUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 153,
+    "base_asset": "ASTAR",
+    "quote_asset": "USDT",
+    "symbol": "ASTARUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 153,
+    "base_asset": "ASTAR",
+    "quote_asset": "USDC",
+    "symbol": "ASTARUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 154,
+    "base_asset": "EDU",
+    "quote_asset": "USDT",
+    "symbol": "EDUUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 154,
+    "base_asset": "EDU",
+    "quote_asset": "USDC",
+    "symbol": "EDUUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 155,
+    "base_asset": "HOOK",
+    "quote_asset": "USDT",
+    "symbol": "HOOKUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 155,
+    "base_asset": "HOOK",
+    "quote_asset": "USDC",
+    "symbol": "HOOKUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 156,
+    "base_asset": "PORTAL",
+    "quote_asset": "USDT",
+    "symbol": "PORTALUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 156,
+    "base_asset": "PORTAL",
+    "quote_asset": "USDC",
+    "symbol": "PORTALUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 157,
+    "base_asset": "MAV",
+    "quote_asset": "USDT",
+    "symbol": "MAVUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 157,
+    "base_asset": "MAV",
+    "quote_asset": "USDC",
+    "symbol": "MAVUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 158,
+    "base_asset": "PIXEL",
+    "quote_asset": "USDT",
+    "symbol": "PIXELUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 158,
+    "base_asset": "PIXEL",
+    "quote_asset": "USDC",
+    "symbol": "PIXELUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 159,
+    "base_asset": "LISTA",
+    "quote_asset": "USDT",
+    "symbol": "LISTAUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 159,
+    "base_asset": "LISTA",
+    "quote_asset": "USDC",
+    "symbol": "LISTAUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 160,
+    "base_asset": "BANANA",
+    "quote_asset": "USDT",
+    "symbol": "BANANAUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 160,
+    "base_asset": "BANANA",
+    "quote_asset": "USDC",
+    "symbol": "BANANAUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 161,
+    "base_asset": "OM",
+    "quote_asset": "USDT",
+    "symbol": "OMUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 161,
+    "base_asset": "OM",
+    "quote_asset": "USDC",
+    "symbol": "OMUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 162,
+    "base_asset": "TRU",
+    "quote_asset": "USDT",
+    "symbol": "TRUUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 162,
+    "base_asset": "TRU",
+    "quote_asset": "USDC",
+    "symbol": "TRUUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 163,
+    "base_asset": "ARKM",
+    "quote_asset": "USDT",
+    "symbol": "ARKMUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 163,
+    "base_asset": "ARKM",
+    "quote_asset": "USDC",
+    "symbol": "ARKMUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 164,
+    "base_asset": "LQTY",
+    "quote_asset": "USDT",
+    "symbol": "LQTYUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 164,
+    "base_asset": "LQTY",
+    "quote_asset": "USDC",
+    "symbol": "LQTYUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 165,
+    "base_asset": "BEL",
+    "quote_asset": "USDT",
+    "symbol": "BELUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 165,
+    "base_asset": "BEL",
+    "quote_asset": "USDC",
+    "symbol": "BELUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 166,
+    "base_asset": "BADGER",
+    "quote_asset": "USDT",
+    "symbol": "BADGERUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 166,
+    "base_asset": "BADGER",
+    "quote_asset": "USDC",
+    "symbol": "BADGERUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 167,
+    "base_asset": "RAD",
+    "quote_asset": "USDT",
+    "symbol": "RADUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 167,
+    "base_asset": "RAD",
+    "quote_asset": "USDC",
+    "symbol": "RADUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 168,
+    "base_asset": "STORJ",
+    "quote_asset": "USDT",
+    "symbol": "STORJUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 168,
+    "base_asset": "STORJ",
+    "quote_asset": "USDC",
+    "symbol": "STORJUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 169,
+    "base_asset": "CELR",
+    "quote_asset": "USDT",
+    "symbol": "CELRUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 169,
+    "base_asset": "CELR",
+    "quote_asset": "USDC",
+    "symbol": "CELRUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 170,
+    "base_asset": "ELF",
+    "quote_asset": "USDT",
+    "symbol": "ELFUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 170,
+    "base_asset": "ELF",
+    "quote_asset": "USDC",
+    "symbol": "ELFUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 171,
+    "base_asset": "MTL",
+    "quote_asset": "USDT",
+    "symbol": "MTLUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 171,
+    "base_asset": "MTL",
+    "quote_asset": "USDC",
+    "symbol": "MTLUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 172,
+    "base_asset": "C98",
+    "quote_asset": "USDT",
+    "symbol": "C98USDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 172,
+    "base_asset": "C98",
+    "quote_asset": "USDC",
+    "symbol": "C98USDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 173,
+    "base_asset": "DODO",
+    "quote_asset": "USDT",
+    "symbol": "DODOUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 173,
+    "base_asset": "DODO",
+    "quote_asset": "USDC",
+    "symbol": "DODOUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 174,
+    "base_asset": "SYS",
+    "quote_asset": "USDT",
+    "symbol": "SYSUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 174,
+    "base_asset": "SYS",
+    "quote_asset": "USDC",
+    "symbol": "SYSUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 175,
+    "base_asset": "CHR",
+    "quote_asset": "USDT",
+    "symbol": "CHRUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 175,
+    "base_asset": "CHR",
+    "quote_asset": "USDC",
+    "symbol": "CHRUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 176,
+    "base_asset": "ARPA",
+    "quote_asset": "USDT",
+    "symbol": "ARPAUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 176,
+    "base_asset": "ARPA",
+    "quote_asset": "USDC",
+    "symbol": "ARPAUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 177,
+    "base_asset": "BAND",
+    "quote_asset": "USDT",
+    "symbol": "BANDUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 177,
+    "base_asset": "BAND",
+    "quote_asset": "USDC",
+    "symbol": "BANDUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 178,
+    "base_asset": "LINA",
+    "quote_asset": "USDT",
+    "symbol": "LINAUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 178,
+    "base_asset": "LINA",
+    "quote_asset": "USDC",
+    "symbol": "LINAUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 179,
+    "base_asset": "BICO",
+    "quote_asset": "USDT",
+    "symbol": "BICOUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 179,
+    "base_asset": "BICO",
+    "quote_asset": "USDC",
+    "symbol": "BICOUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 180,
+    "base_asset": "XNO",
+    "quote_asset": "USDT",
+    "symbol": "XNOUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 180,
+    "base_asset": "XNO",
+    "quote_asset": "USDC",
+    "symbol": "XNOUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 181,
+    "base_asset": "PHA",
+    "quote_asset": "USDT",
+    "symbol": "PHAUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 181,
+    "base_asset": "PHA",
+    "quote_asset": "USDC",
+    "symbol": "PHAUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 182,
+    "base_asset": "OGN",
+    "quote_asset": "USDT",
+    "symbol": "OGNUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 182,
+    "base_asset": "OGN",
+    "quote_asset": "USDC",
+    "symbol": "OGNUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 183,
+    "base_asset": "VANRY",
+    "quote_asset": "USDT",
+    "symbol": "VANRYUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 183,
+    "base_asset": "VANRY",
+    "quote_asset": "USDC",
+    "symbol": "VANRYUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 184,
+    "base_asset": "AUDIO",
+    "quote_asset": "USDT",
+    "symbol": "AUDIOUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 184,
+    "base_asset": "AUDIO",
+    "quote_asset": "USDC",
+    "symbol": "AUDIOUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 185,
+    "base_asset": "ATA",
+    "quote_asset": "USDT",
+    "symbol": "ATAUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 185,
+    "base_asset": "ATA",
+    "quote_asset": "USDC",
+    "symbol": "ATAUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 186,
+    "base_asset": "AGLD",
+    "quote_asset": "USDT",
+    "symbol": "AGLDUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 186,
+    "base_asset": "AGLD",
+    "quote_asset": "USDC",
+    "symbol": "AGLDUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 187,
+    "base_asset": "FLM",
+    "quote_asset": "USDT",
+    "symbol": "FLMUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 187,
+    "base_asset": "FLM",
+    "quote_asset": "USDC",
+    "symbol": "FLMUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 188,
+    "base_asset": "DEGO",
+    "quote_asset": "USDT",
+    "symbol": "DEGOUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 188,
+    "base_asset": "DEGO",
+    "quote_asset": "USDC",
+    "symbol": "DEGOUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 189,
+    "base_asset": "ALPHA",
+    "quote_asset": "USDT",
+    "symbol": "ALPHAUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 189,
+    "base_asset": "ALPHA",
+    "quote_asset": "USDC",
+    "symbol": "ALPHAUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 190,
+    "base_asset": "TNSR",
+    "quote_asset": "USDT",
+    "symbol": "TNSRUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 190,
+    "base_asset": "TNSR",
+    "quote_asset": "USDC",
+    "symbol": "TNSRUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 191,
+    "base_asset": "AEVO",
+    "quote_asset": "USDT",
+    "symbol": "AEVOUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 191,
+    "base_asset": "AEVO",
+    "quote_asset": "USDC",
+    "symbol": "AEVOUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 192,
+    "base_asset": "SAGA",
+    "quote_asset": "USDT",
+    "symbol": "SAGAUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 192,
+    "base_asset": "SAGA",
+    "quote_asset": "USDC",
+    "symbol": "SAGAUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 193,
+    "base_asset": "OMNI",
+    "quote_asset": "USDT",
+    "symbol": "OMNIUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 193,
+    "base_asset": "OMNI",
+    "quote_asset": "USDC",
+    "symbol": "OMNIUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 194,
+    "base_asset": "REZ",
+    "quote_asset": "USDT",
+    "symbol": "REZUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 194,
+    "base_asset": "REZ",
+    "quote_asset": "USDC",
+    "symbol": "REZUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 195,
+    "base_asset": "ETHFI",
+    "quote_asset": "USDT",
+    "symbol": "ETHFIUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 195,
+    "base_asset": "ETHFI",
+    "quote_asset": "USDC",
+    "symbol": "ETHFIUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 196,
+    "base_asset": "MANTA",
+    "quote_asset": "USDT",
+    "symbol": "MANTAUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 196,
+    "base_asset": "MANTA",
+    "quote_asset": "USDC",
+    "symbol": "MANTAUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 197,
+    "base_asset": "JTO",
+    "quote_asset": "USDT",
+    "symbol": "JTOUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 197,
+    "base_asset": "JTO",
+    "quote_asset": "USDC",
+    "symbol": "JTOUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 198,
+    "base_asset": "JST",
+    "quote_asset": "USDT",
+    "symbol": "JSTUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 198,
+    "base_asset": "JST",
+    "quote_asset": "USDC",
+    "symbol": "JSTUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 199,
+    "base_asset": "SUN",
+    "quote_asset": "USDT",
+    "symbol": "SUNUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 199,
+    "base_asset": "SUN",
+    "quote_asset": "USDC",
+    "symbol": "SUNUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 200,
+    "base_asset": "USTC",
+    "quote_asset": "USDT",
+    "symbol": "USTCUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 200,
+    "base_asset": "USTC",
+    "quote_asset": "USDC",
+    "symbol": "USTCUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 201,
+    "base_asset": "SC",
+    "quote_asset": "USDT",
+    "symbol": "SCUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 201,
+    "base_asset": "SC",
+    "quote_asset": "USDC",
+    "symbol": "SCUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 202,
+    "base_asset": "NKN",
+    "quote_asset": "USDT",
+    "symbol": "NKNUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 202,
+    "base_asset": "NKN",
+    "quote_asset": "USDC",
+    "symbol": "NKNUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 203,
+    "base_asset": "WIN",
+    "quote_asset": "USDT",
+    "symbol": "WINUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 203,
+    "base_asset": "WIN",
+    "quote_asset": "USDC",
+    "symbol": "WINUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 204,
+    "base_asset": "XEC",
+    "quote_asset": "USDT",
+    "symbol": "XECUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 204,
+    "base_asset": "XEC",
+    "quote_asset": "USDC",
+    "symbol": "XECUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 205,
+    "base_asset": "RSR",
+    "quote_asset": "USDT",
+    "symbol": "RSRUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 205,
+    "base_asset": "RSR",
+    "quote_asset": "USDC",
+    "symbol": "RSRUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 206,
+    "base_asset": "MBOX",
+    "quote_asset": "USDT",
+    "symbol": "MBOXUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 206,
+    "base_asset": "MBOX",
+    "quote_asset": "USDC",
+    "symbol": "MBOXUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 207,
+    "base_asset": "PROM",
+    "quote_asset": "USDT",
+    "symbol": "PROMUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 207,
+    "base_asset": "PROM",
+    "quote_asset": "USDC",
+    "symbol": "PROMUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 208,
+    "base_asset": "DIA",
+    "quote_asset": "USDT",
+    "symbol": "DIAUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 208,
+    "base_asset": "DIA",
+    "quote_asset": "USDC",
+    "symbol": "DIAUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 209,
+    "base_asset": "STEEM",
+    "quote_asset": "USDT",
+    "symbol": "STEEMUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 209,
+    "base_asset": "STEEM",
+    "quote_asset": "USDC",
+    "symbol": "STEEMUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 210,
+    "base_asset": "FIS",
+    "quote_asset": "USDT",
+    "symbol": "FISUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 210,
+    "base_asset": "FIS",
+    "quote_asset": "USDC",
+    "symbol": "FISUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 211,
+    "base_asset": "MDT",
+    "quote_asset": "USDT",
+    "symbol": "MDTUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 211,
+    "base_asset": "MDT",
+    "quote_asset": "USDC",
+    "symbol": "MDTUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 212,
+    "base_asset": "CTK",
+    "quote_asset": "USDT",
+    "symbol": "CTKUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 212,
+    "base_asset": "CTK",
+    "quote_asset": "USDC",
+    "symbol": "CTKUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 213,
+    "base_asset": "REN",
+    "quote_asset": "USDT",
+    "symbol": "RENUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 213,
+    "base_asset": "REN",
+    "quote_asset": "USDC",
+    "symbol": "RENUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 214,
+    "base_asset": "FORTH",
+    "quote_asset": "USDT",
+    "symbol": "FORTHUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 214,
+    "base_asset": "FORTH",
+    "quote_asset": "USDC",
+    "symbol": "FORTHUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 215,
+    "base_asset": "BAKE",
+    "quote_asset": "USDT",
+    "symbol": "BAKEUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 215,
+    "base_asset": "BAKE",
+    "quote_asset": "USDC",
+    "symbol": "BAKEUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 216,
+    "base_asset": "NMR",
+    "quote_asset": "USDT",
+    "symbol": "NMRUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 216,
+    "base_asset": "NMR",
+    "quote_asset": "USDC",
+    "symbol": "NMRUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 217,
+    "base_asset": "TLM",
+    "quote_asset": "USDT",
+    "symbol": "TLMUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 217,
+    "base_asset": "TLM",
+    "quote_asset": "USDC",
+    "symbol": "TLMUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 218,
+    "base_asset": "VOXEL",
+    "quote_asset": "USDT",
+    "symbol": "VOXELUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 218,
+    "base_asset": "VOXEL",
+    "quote_asset": "USDC",
+    "symbol": "VOXELUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 219,
+    "base_asset": "DAR",
+    "quote_asset": "USDT",
+    "symbol": "DARUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 219,
+    "base_asset": "DAR",
+    "quote_asset": "USDC",
+    "symbol": "DARUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 220,
+    "base_asset": "ALICE",
+    "quote_asset": "USDT",
+    "symbol": "ALICEUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 220,
+    "base_asset": "ALICE",
+    "quote_asset": "USDC",
+    "symbol": "ALICEUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 221,
+    "base_asset": "SLP",
+    "quote_asset": "USDT",
+    "symbol": "SLPUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 221,
+    "base_asset": "SLP",
+    "quote_asset": "USDC",
+    "symbol": "SLPUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 222,
+    "base_asset": "HIGH",
+    "quote_asset": "USDT",
+    "symbol": "HIGHUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 222,
+    "base_asset": "HIGH",
+    "quote_asset": "USDC",
+    "symbol": "HIGHUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 223,
+    "base_asset": "LEVER",
+    "quote_asset": "USDT",
+    "symbol": "LEVERUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 223,
+    "base_asset": "LEVER",
+    "quote_asset": "USDC",
+    "symbol": "LEVERUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 224,
+    "base_asset": "QUICK",
+    "quote_asset": "USDT",
+    "symbol": "QUICKUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 224,
+    "base_asset": "QUICK",
+    "quote_asset": "USDC",
+    "symbol": "QUICKUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 225,
+    "base_asset": "RLC",
+    "quote_asset": "USDT",
+    "symbol": "RLCUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 225,
+    "base_asset": "RLC",
+    "quote_asset": "USDC",
+    "symbol": "RLCUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 226,
+    "base_asset": "TRIBE",
+    "quote_asset": "USDT",
+    "symbol": "TRIBEUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 226,
+    "base_asset": "TRIBE",
+    "quote_asset": "USDC",
+    "symbol": "TRIBEUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 227,
+    "base_asset": "FARM",
+    "quote_asset": "USDT",
+    "symbol": "FARMUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 227,
+    "base_asset": "FARM",
+    "quote_asset": "USDC",
+    "symbol": "FARMUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 228,
+    "base_asset": "DATA",
+    "quote_asset": "USDT",
+    "symbol": "DATAUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 228,
+    "base_asset": "DATA",
+    "quote_asset": "USDC",
+    "symbol": "DATAUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 229,
+    "base_asset": "AMB",
+    "quote_asset": "USDT",
+    "symbol": "AMBUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 229,
+    "base_asset": "AMB",
+    "quote_asset": "USDC",
+    "symbol": "AMBUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 230,
+    "base_asset": "MBL",
+    "quote_asset": "USDT",
+    "symbol": "MBLUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 230,
+    "base_asset": "MBL",
+    "quote_asset": "USDC",
+    "symbol": "MBLUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 231,
+    "base_asset": "KEY",
+    "quote_asset": "USDT",
+    "symbol": "KEYUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 231,
+    "base_asset": "KEY",
+    "quote_asset": "USDC",
+    "symbol": "KEYUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 232,
+    "base_asset": "COS",
+    "quote_asset": "USDT",
+    "symbol": "COSUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 232,
+    "base_asset": "COS",
+    "quote_asset": "USDC",
+    "symbol": "COSUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 233,
+    "base_asset": "FIDA",
+    "quote_asset": "USDT",
+    "symbol": "FIDAUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 233,
+    "base_asset": "FIDA",
+    "quote_asset": "USDC",
+    "symbol": "FIDAUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 234,
+    "base_asset": "SANTOS",
+    "quote_asset": "USDT",
+    "symbol": "SANTOSUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 234,
+    "base_asset": "SANTOS",
+    "quote_asset": "USDC",
+    "symbol": "SANTOSUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 235,
+    "base_asset": "PORTO",
+    "quote_asset": "USDT",
+    "symbol": "PORTOUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 235,
+    "base_asset": "PORTO",
+    "quote_asset": "USDC",
+    "symbol": "PORTOUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 236,
+    "base_asset": "LAZIO",
+    "quote_asset": "USDT",
+    "symbol": "LAZIOUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 236,
+    "base_asset": "LAZIO",
+    "quote_asset": "USDC",
+    "symbol": "LAZIOUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 237,
+    "base_asset": "ACM",
+    "quote_asset": "USDT",
+    "symbol": "ACMUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 237,
+    "base_asset": "ACM",
+    "quote_asset": "USDC",
+    "symbol": "ACMUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 238,
+    "base_asset": "PSG",
+    "quote_asset": "USDT",
+    "symbol": "PSGUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 238,
+    "base_asset": "PSG",
+    "quote_asset": "USDC",
+    "symbol": "PSGUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 239,
+    "base_asset": "ATM",
+    "quote_asset": "USDT",
+    "symbol": "ATMUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 239,
+    "base_asset": "ATM",
+    "quote_asset": "USDC",
+    "symbol": "ATMUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 240,
+    "base_asset": "JUV",
+    "quote_asset": "USDT",
+    "symbol": "JUVUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 240,
+    "base_asset": "JUV",
+    "quote_asset": "USDC",
+    "symbol": "JUVUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 241,
+    "base_asset": "ASR",
+    "quote_asset": "USDT",
+    "symbol": "ASRUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 241,
+    "base_asset": "ASR",
+    "quote_asset": "USDC",
+    "symbol": "ASRUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 242,
+    "base_asset": "CITY",
+    "quote_asset": "USDT",
+    "symbol": "CITYUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 242,
+    "base_asset": "CITY",
+    "quote_asset": "USDC",
+    "symbol": "CITYUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 243,
+    "base_asset": "BAR",
+    "quote_asset": "USDT",
+    "symbol": "BARUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 243,
+    "base_asset": "BAR",
+    "quote_asset": "USDC",
+    "symbol": "BARUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 244,
+    "base_asset": "GAL",
+    "quote_asset": "USDT",
+    "symbol": "GALUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 244,
+    "base_asset": "GAL",
+    "quote_asset": "USDC",
+    "symbol": "GALUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 245,
+    "base_asset": "MOB",
+    "quote_asset": "USDT",
+    "symbol": "MOBUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 245,
+    "base_asset": "MOB",
+    "quote_asset": "USDC",
+    "symbol": "MOBUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 246,
+    "base_asset": "PERP",
+    "quote_asset": "USDT",
+    "symbol": "PERPUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 246,
+    "base_asset": "PERP",
+    "quote_asset": "USDC",
+    "symbol": "PERPUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 247,
+    "base_asset": "LOKA",
+    "quote_asset": "USDT",
+    "symbol": "LOKAUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 247,
+    "base_asset": "LOKA",
+    "quote_asset": "USDC",
+    "symbol": "LOKAUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 248,
+    "base_asset": "POND",
+    "quote_asset": "USDT",
+    "symbol": "PONDUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 248,
+    "base_asset": "POND",
+    "quote_asset": "USDC",
+    "symbol": "PONDUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 249,
+    "base_asset": "HIFI",
+    "quote_asset": "USDT",
+    "symbol": "HIFIUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 249,
+    "base_asset": "HIFI",
+    "quote_asset": "USDC",
+    "symbol": "HIFIUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 250,
+    "base_asset": "NEIRO",
+    "quote_asset": "USDT",
+    "symbol": "NEIROUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 250,
+    "base_asset": "NEIRO",
+    "quote_asset": "USDC",
+    "symbol": "NEIROUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 251,
+    "base_asset": "HMSTR",
+    "quote_asset": "USDT",
+    "symbol": "HMSTRUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 251,
+    "base_asset": "HMSTR",
+    "quote_asset": "USDC",
+    "symbol": "HMSTRUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 252,
+    "base_asset": "CATI",
+    "quote_asset": "USDT",
+    "symbol": "CATIUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 252,
+    "base_asset": "CATI",
+    "quote_asset": "USDC",
+    "symbol": "CATIUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 253,
+    "base_asset": "SCR",
+    "quote_asset": "USDT",
+    "symbol": "SCRUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 253,
+    "base_asset": "SCR",
+    "quote_asset": "USDC",
+    "symbol": "SCRUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 254,
+    "base_asset": "ARK",
+    "quote_asset": "USDT",
+    "symbol": "ARKUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 254,
+    "base_asset": "ARK",
+    "quote_asset": "USDC",
+    "symbol": "ARKUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 255,
+    "base_asset": "BNT",
+    "quote_asset": "USDT",
+    "symbol": "BNTUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 255,
+    "base_asset": "BNT",
+    "quote_asset": "USDC",
+    "symbol": "BNTUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 256,
+    "base_asset": "TAIKO",
+    "quote_asset": "USDT",
+    "symbol": "TAIKOUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 256,
+    "base_asset": "TAIKO",
+    "quote_asset": "USDC",
+    "symbol": "TAIKOUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 257,
+    "base_asset": "BIO",
+    "quote_asset": "USDT",
+    "symbol": "BIOUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 257,
+    "base_asset": "BIO",
+    "quote_asset": "USDC",
+    "symbol": "BIOUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 258,
+    "base_asset": "VIRTUAL",
+    "quote_asset": "USDT",
+    "symbol": "VIRTUALUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 258,
+    "base_asset": "VIRTUAL",
+    "quote_asset": "USDC",
+    "symbol": "VIRTUALUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 259,
+    "base_asset": "KAITO",
+    "quote_asset": "USDT",
+    "symbol": "KAITOUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 259,
+    "base_asset": "KAITO",
+    "quote_asset": "USDC",
+    "symbol": "KAITOUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 260,
+    "base_asset": "IP",
+    "quote_asset": "USDT",
+    "symbol": "IPUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 260,
+    "base_asset": "IP",
+    "quote_asset": "USDC",
+    "symbol": "IPUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 261,
+    "base_asset": "SHELL",
+    "quote_asset": "USDT",
+    "symbol": "SHELLUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 261,
+    "base_asset": "SHELL",
+    "quote_asset": "USDC",
+    "symbol": "SHELLUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 262,
+    "base_asset": "COOKIE",
+    "quote_asset": "USDT",
+    "symbol": "COOKIEUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 262,
+    "base_asset": "COOKIE",
+    "quote_asset": "USDC",
+    "symbol": "COOKIEUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 263,
+    "base_asset": "AIXBT",
+    "quote_asset": "USDT",
+    "symbol": "AIXBTUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 263,
+    "base_asset": "AIXBT",
+    "quote_asset": "USDC",
+    "symbol": "AIXBTUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 264,
+    "base_asset": "PIPPIN",
+    "quote_asset": "USDT",
+    "symbol": "PIPPINUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 264,
+    "base_asset": "PIPPIN",
+    "quote_asset": "USDC",
+    "symbol": "PIPPINUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 265,
+    "base_asset": "ANIME",
+    "quote_asset": "USDT",
+    "symbol": "ANIMEUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 265,
+    "base_asset": "ANIME",
+    "quote_asset": "USDC",
+    "symbol": "ANIMEUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 266,
+    "base_asset": "BERA",
+    "quote_asset": "USDT",
+    "symbol": "BERAUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 266,
+    "base_asset": "BERA",
+    "quote_asset": "USDC",
+    "symbol": "BERAUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 267,
+    "base_asset": "LAYER",
+    "quote_asset": "USDT",
+    "symbol": "LAYERUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 267,
+    "base_asset": "LAYER",
+    "quote_asset": "USDC",
+    "symbol": "LAYERUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 268,
+    "base_asset": "MOVE",
+    "quote_asset": "USDT",
+    "symbol": "MOVEUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 268,
+    "base_asset": "MOVE",
+    "quote_asset": "USDC",
+    "symbol": "MOVEUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 269,
+    "base_asset": "GPS",
+    "quote_asset": "USDT",
+    "symbol": "GPSUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 269,
+    "base_asset": "GPS",
+    "quote_asset": "USDC",
+    "symbol": "GPSUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 270,
+    "base_asset": "ACH",
+    "quote_asset": "USDT",
+    "symbol": "ACHUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 270,
+    "base_asset": "ACH",
+    "quote_asset": "USDC",
+    "symbol": "ACHUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 271,
+    "base_asset": "ACX",
+    "quote_asset": "USDT",
+    "symbol": "ACXUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 271,
+    "base_asset": "ACX",
+    "quote_asset": "USDC",
+    "symbol": "ACXUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 272,
+    "base_asset": "ADX",
+    "quote_asset": "USDT",
+    "symbol": "ADXUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 272,
+    "base_asset": "ADX",
+    "quote_asset": "USDC",
+    "symbol": "ADXUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 273,
+    "base_asset": "AERGO",
+    "quote_asset": "USDT",
+    "symbol": "AERGOUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 273,
+    "base_asset": "AERGO",
+    "quote_asset": "USDC",
+    "symbol": "AERGOUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 274,
+    "base_asset": "AERO",
+    "quote_asset": "USDT",
+    "symbol": "AEROUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 274,
+    "base_asset": "AERO",
+    "quote_asset": "USDC",
+    "symbol": "AEROUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 275,
+    "base_asset": "AION",
+    "quote_asset": "USDT",
+    "symbol": "AIONUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 275,
+    "base_asset": "AION",
+    "quote_asset": "USDC",
+    "symbol": "AIONUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 276,
+    "base_asset": "ALCX",
+    "quote_asset": "USDT",
+    "symbol": "ALCXUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 276,
+    "base_asset": "ALCX",
+    "quote_asset": "USDC",
+    "symbol": "ALCXUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 277,
+    "base_asset": "ALPACA",
+    "quote_asset": "USDT",
+    "symbol": "ALPACAUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 277,
+    "base_asset": "ALPACA",
+    "quote_asset": "USDC",
+    "symbol": "ALPACAUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 278,
+    "base_asset": "AUCTION",
+    "quote_asset": "USDT",
+    "symbol": "AUCTIONUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 278,
+    "base_asset": "AUCTION",
+    "quote_asset": "USDC",
+    "symbol": "AUCTIONUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 279,
+    "base_asset": "AVA",
+    "quote_asset": "USDT",
+    "symbol": "AVAUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 279,
+    "base_asset": "AVA",
+    "quote_asset": "USDC",
+    "symbol": "AVAUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 280,
+    "base_asset": "AXL",
+    "quote_asset": "USDT",
+    "symbol": "AXLUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 280,
+    "base_asset": "AXL",
+    "quote_asset": "USDC",
+    "symbol": "AXLUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 281,
+    "base_asset": "BB",
+    "quote_asset": "USDT",
+    "symbol": "BBUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 281,
+    "base_asset": "BB",
+    "quote_asset": "USDC",
+    "symbol": "BBUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 282,
+    "base_asset": "BETA",
+    "quote_asset": "USDT",
+    "symbol": "BETAUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 282,
+    "base_asset": "BETA",
+    "quote_asset": "USDC",
+    "symbol": "BETAUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 283,
+    "base_asset": "BROCCOLI",
+    "quote_asset": "USDT",
+    "symbol": "BROCCOLIUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 283,
+    "base_asset": "BROCCOLI",
+    "quote_asset": "USDC",
+    "symbol": "BROCCOLIUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 284,
+    "base_asset": "BSW",
+    "quote_asset": "USDT",
+    "symbol": "BSWUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 284,
+    "base_asset": "BSW",
+    "quote_asset": "USDC",
+    "symbol": "BSWUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 285,
+    "base_asset": "BURGER",
+    "quote_asset": "USDT",
+    "symbol": "BURGERUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 285,
+    "base_asset": "BURGER",
+    "quote_asset": "USDC",
+    "symbol": "BURGERUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 286,
+    "base_asset": "CAT",
+    "quote_asset": "USDT",
+    "symbol": "CATUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 286,
+    "base_asset": "CAT",
+    "quote_asset": "USDC",
+    "symbol": "CATUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 287,
+    "base_asset": "CAW",
+    "quote_asset": "USDT",
+    "symbol": "CAWUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 287,
+    "base_asset": "CAW",
+    "quote_asset": "USDC",
+    "symbol": "CAWUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 288,
+    "base_asset": "CLV",
+    "quote_asset": "USDT",
+    "symbol": "CLVUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 288,
+    "base_asset": "CLV",
+    "quote_asset": "USDC",
+    "symbol": "CLVUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 289,
+    "base_asset": "COMBO",
+    "quote_asset": "USDT",
+    "symbol": "COMBOUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 289,
+    "base_asset": "COMBO",
+    "quote_asset": "USDC",
+    "symbol": "COMBOUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 290,
+    "base_asset": "CREAM",
+    "quote_asset": "USDT",
+    "symbol": "CREAMUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 290,
+    "base_asset": "CREAM",
+    "quote_asset": "USDC",
+    "symbol": "CREAMUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 291,
+    "base_asset": "CTXC",
+    "quote_asset": "USDT",
+    "symbol": "CTXCUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 291,
+    "base_asset": "CTXC",
+    "quote_asset": "USDC",
+    "symbol": "CTXCUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 292,
+    "base_asset": "CYBER",
+    "quote_asset": "USDT",
+    "symbol": "CYBERUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 292,
+    "base_asset": "CYBER",
+    "quote_asset": "USDC",
+    "symbol": "CYBERUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 293,
+    "base_asset": "DCR",
+    "quote_asset": "USDT",
+    "symbol": "DCRUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 293,
+    "base_asset": "DCR",
+    "quote_asset": "USDC",
+    "symbol": "DCRUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 294,
+    "base_asset": "DGB",
+    "quote_asset": "USDT",
+    "symbol": "DGBUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 294,
+    "base_asset": "DGB",
+    "quote_asset": "USDC",
+    "symbol": "DGBUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 295,
+    "base_asset": "DF",
+    "quote_asset": "USDT",
+    "symbol": "DFUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 295,
+    "base_asset": "DF",
+    "quote_asset": "USDC",
+    "symbol": "DFUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 296,
+    "base_asset": "DNT",
+    "quote_asset": "USDT",
+    "symbol": "DNTUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 296,
+    "base_asset": "DNT",
+    "quote_asset": "USDC",
+    "symbol": "DNTUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 297,
+    "base_asset": "ERN",
+    "quote_asset": "USDT",
+    "symbol": "ERNUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 297,
+    "base_asset": "ERN",
+    "quote_asset": "USDC",
+    "symbol": "ERNUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 298,
+    "base_asset": "FIO",
+    "quote_asset": "USDT",
+    "symbol": "FIOUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 298,
+    "base_asset": "FIO",
+    "quote_asset": "USDC",
+    "symbol": "FIOUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 299,
+    "base_asset": "FUEL",
+    "quote_asset": "USDT",
+    "symbol": "FUELUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 299,
+    "base_asset": "FUEL",
+    "quote_asset": "USDC",
+    "symbol": "FUELUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 300,
+    "base_asset": "FUN",
+    "quote_asset": "USDT",
+    "symbol": "FUNUSDT",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  },
+  {
+    "rank": 300,
+    "base_asset": "FUN",
+    "quote_asset": "USDC",
+    "symbol": "FUNUSDC",
+    "exchange": "binance",
+    "market": "spot",
+    "priority_group": "top_300_candidates",
+    "note": "Candidate symbol for order-history scan"
+  }
+]
