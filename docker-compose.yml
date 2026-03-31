@@ -1,5 +1,3 @@
-version: "3.9"
-
 services:
   api:
     build:
@@ -10,8 +8,10 @@ services:
     env_file:
       - .env
     depends_on:
-      - redis
-      - postgres
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
     command: >
       sh -c "uvicorn app.main:app --host 0.0.0.0 --port 8000"
     expose:
@@ -35,7 +35,8 @@ services:
     container_name: marketdata-frontend
     restart: always
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     expose:
       - "3000"
     networks:
@@ -65,9 +66,10 @@ services:
       - marketdata_net
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
-      interval: 20s
+      interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 5s
 
   postgres:
     image: postgres:16-alpine
@@ -87,17 +89,20 @@ services:
       - marketdata_net
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-marketdata} -d ${POSTGRES_DB:-marketdata}"]
-      interval: 20s
+      interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
+      start_period: 10s
 
   nginx:
     image: nginx:1.27-alpine
     container_name: marketdata-nginx
     restart: always
     depends_on:
-      - api
-      - frontend
+      api:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
     ports:
       - "127.0.0.1:8088:80"
     volumes:
@@ -123,6 +128,6 @@ networks:
     driver: bridge
 
   # create this once on the server:
-  # docker network create infra_internal
+  # docker network create klinehub_internal
   klinehub_internal:
     external: true
