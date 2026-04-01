@@ -8,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from ..config import settings
-from ..exchanges.binance_spot import BinanceSpotAdapter
+from ..exchanges.binance_spot import BinanceSpotAdapter, InvalidSpotSymbolError
 from ..models import Candle, TrackedPair
 from ..services.candle_service import CandleService
 from ..utils.intervals import get_interval_ms, latest_closed_open_time
@@ -264,6 +264,23 @@ class BackfillService:
                         interval=pair.interval,
                     )
                     repaired_values.append(repaired)
+
+                except InvalidSpotSymbolError:
+                    logger.warning(
+                        "Pair %s %s is invalid on Binance spot. Pausing it.",
+                        pair.symbol,
+                        pair.interval,
+                    )
+
+                    async with self.session_factory() as session:
+                        row = await session.execute(
+                            select(TrackedPair).where(TrackedPair.id == pair.id)
+                        )
+                        obj = row.scalar_one_or_none()
+                        if obj:
+                            obj.status = "paused"
+                            await session.commit()
+
                 except Exception as exc:
                     logger.exception(
                         "Failed repairing pair %s %s: %s",
