@@ -20,7 +20,7 @@ services:
       - ./backend:/app
     networks:
       - marketdata_net
-      - klinehub_internal
+      # - klinehub_internal
 
   frontend:
     build:
