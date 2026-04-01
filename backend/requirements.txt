@@ -9,4 +9,4 @@ aiohttp==3.11.13
 websockets==15.0.1
 python-dotenv==1.0.1
 # asyncio==3.0.0
-httpx==0.35.0
+httpx
