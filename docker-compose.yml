@@ -103,12 +103,6 @@ services:
       klinehub_internal:
         aliases:
           - klinehub_nginx
-    healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/nginx-health || exit 1"]
-      interval: 20s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
 
 volumes:
   marketdata_redis_data:
