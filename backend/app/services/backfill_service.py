@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 import time
 from dataclasses import dataclass
@@ -8,12 +9,11 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from ..config import settings
+from ..exchanges.binance_futures import BinanceFuturesAdapter
 from ..exchanges.binance_spot import BinanceSpotAdapter, InvalidSpotSymbolError
 from ..models import Candle, TrackedPair
 from ..services.candle_service import CandleService
 from ..utils.intervals import get_interval_ms, latest_closed_open_time
-
-import asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,20 @@ class MissingRange:
 class BackfillService:
     def __init__(self, session_factory: async_sessionmaker[AsyncSession]) -> None:
         self.session_factory = session_factory
-        self.adapter = BinanceSpotAdapter()
+        self.spot_adapter = BinanceSpotAdapter()
+        self.futures_adapter = BinanceFuturesAdapter()
+
+    def _get_adapter(self, *, exchange: str, market: str):
+        if exchange != "binance":
+            raise ValueError(f"Unsupported exchange: {exchange}")
+
+        if market == "spot":
+            return self.spot_adapter
+
+        if market == "futures":
+            return self.futures_adapter
+
+        raise ValueError(f"Unsupported market: {market}")
 
     async def ensure_range_loaded(
         self,
@@ -124,6 +137,7 @@ class BackfillService:
     ) -> int:
         symbol = symbol.upper()
         self._assert_supported(exchange=exchange, market=market)
+        adapter = self._get_adapter(exchange=exchange, market=market)
 
         limit = min(limit or settings.default_backfill_limit, settings.max_backfill_limit)
 
@@ -136,11 +150,19 @@ class BackfillService:
             limit,
         )
 
-        events = await self.adapter.fetch_klines(
-            symbol=symbol,
-            interval=interval,
-            limit=limit,
-        )
+        try:
+            events = await adapter.fetch_klines(
+                symbol=symbol,
+                interval=interval,
+                limit=limit,
+            )
+        except InvalidSpotSymbolError:
+            logger.warning(
+                "Invalid Binance spot symbol in recent backfill: %s %s",
+                symbol,
+                interval,
+            )
+            raise
 
         if not events:
             logger.info("Backfill recent pair got no events for %s %s", symbol, interval)
@@ -248,7 +270,7 @@ class BackfillService:
             )
             pairs = result.scalars().all()
 
-        logger.info("repair_all_active_pairs found %s active pairs", len(pairs))
+        logger.info("repair_all_active_pairs found %s active spot pairs", len(pairs))
 
         semaphore = asyncio.Semaphore(10)
         repaired_values: list[int] = []
@@ -292,13 +314,16 @@ class BackfillService:
         await asyncio.gather(*[_repair_one(pair) for pair in pairs])
 
         total_repaired = sum(repaired_values)
-        logger.info("repair_all_active_pairs finished, total repaired candles=%s", total_repaired)
+        logger.info(
+            "repair_all_active_pairs finished, total repaired candles=%s",
+            total_repaired,
+        )
         return total_repaired
 
     def _assert_supported(self, *, exchange: str, market: str) -> None:
-        if exchange != "binance" or market != "spot":
+        if exchange != "binance" or market not in {"spot", "futures"}:
             raise ValueError(
-                f"BackfillService currently supports only binance spot, "
+                f"BackfillService supports only binance spot/futures, "
                 f"got exchange={exchange} market={market}"
             )
 
@@ -390,6 +415,8 @@ class BackfillService:
         if start_open_time > end_open_time:
             return 0
 
+        adapter = self._get_adapter(exchange=exchange, market=market)
+
         total_saved = 0
         chunk_start = start_open_time
 
@@ -412,13 +439,21 @@ class BackfillService:
                 limit,
             )
 
-            events = await self.adapter.fetch_klines(
-                symbol=symbol,
-                interval=interval,
-                start_time=chunk_start,
-                end_time=chunk_end + interval_ms - 1,
-                limit=limit,
-            )
+            try:
+                events = await adapter.fetch_klines(
+                    symbol=symbol,
+                    interval=interval,
+                    start_time=chunk_start,
+                    end_time=chunk_end + interval_ms - 1,
+                    limit=limit,
+                )
+            except InvalidSpotSymbolError:
+                logger.warning(
+                    "Invalid Binance spot symbol while fetching range: %s %s",
+                    symbol,
+                    interval,
+                )
+                raise
 
             if not events:
                 logger.info(

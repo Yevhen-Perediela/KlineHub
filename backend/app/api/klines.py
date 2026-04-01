@@ -57,7 +57,7 @@ async def get_klines(
     if from_ts > to_ts:
         return KlineHistoryResponse(bars=[], noData=True)
 
-    should_backfill = exchange == "binance" and market == "futures"
+    should_backfill = exchange == "binance" and market in {"spot", "futures"}
 
     if is_aggregated_interval(interval):
         if should_backfill:
