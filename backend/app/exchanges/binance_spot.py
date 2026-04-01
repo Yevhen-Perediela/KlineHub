@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any
+import json
 
 import httpx
 
@@ -17,13 +18,11 @@ class BinanceSpotAdapter:
         return f"{self.WS_BASE_URL}/stream?streams={joined}"
 
     def parse_message(self, raw_message: str) -> dict[str, Any]:
-        import json
         return json.loads(raw_message)
 
     def extract_kline_event(self, message: dict[str, Any]) -> dict[str, Any] | None:
         data = message.get("data") or message
-        event_type = data.get("e")
-        if event_type != "kline":
+        if data.get("e") != "kline":
             return None
 
         k = data.get("k") or {}
@@ -59,7 +58,6 @@ class BinanceSpotAdapter:
             "symbol": symbol.upper(),
             "interval": interval,
         }
-
         if start_time is not None:
             params["startTime"] = int(start_time)
         if end_time is not None:
@@ -72,8 +70,12 @@ class BinanceSpotAdapter:
                 f"{self.REST_BASE_URL}/api/v3/klines",
                 params=params,
             )
-            response.raise_for_status()
-            rows = response.json()
+
+        if response.status_code == 400:
+            return []
+
+        response.raise_for_status()
+        rows = response.json()
 
         events: list[dict[str, Any]] = []
         for row in rows:
@@ -89,5 +91,4 @@ class BinanceSpotAdapter:
                     "is_closed": True,
                 }
             )
-
         return events
