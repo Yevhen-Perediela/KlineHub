@@ -10,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from ..config import settings
-from ..exchanges.binance_futures import BinanceFuturesAdapter
+from ..exchanges.binance_spot import BinanceSpotAdapter
 from ..models import TrackedPair
 from ..services.backfill_service import BackfillService
 from ..services.candle_service import CandleService
@@ -34,7 +34,7 @@ class StreamManager:
         self.session_factory = session_factory
         self.backfill_service = backfill_service
         self.realtime_service = realtime_service
-        self._adapter = BinanceFuturesAdapter()
+        self._adapter = BinanceSpotAdapter()
 
         self._stop_event = asyncio.Event()
         self._reload_lock = asyncio.Lock()
@@ -43,7 +43,6 @@ class StreamManager:
         self._worker_tasks: list[asyncio.Task] = []
         self._backfill_task: asyncio.Task | None = None
 
-        # safer than putting all 609 into one socket
         self._streams_per_connection = getattr(settings, "ws_streams_per_connection", 200)
 
     async def start(self) -> None:
@@ -59,7 +58,6 @@ class StreamManager:
         logger.info("Stopping StreamManager")
         self._stop_event.set()
 
-        # stop workers
         for task in self._worker_tasks:
             task.cancel()
 
@@ -73,7 +71,6 @@ class StreamManager:
 
         self._worker_tasks.clear()
 
-        # stop backfill
         if self._backfill_task:
             self._backfill_task.cancel()
             try:
@@ -127,7 +124,6 @@ class StreamManager:
                     await asyncio.sleep(5)
                     continue
 
-                # start backfill for all active pairs
                 if not self._backfill_task or self._backfill_task.done():
                     self._backfill_task = asyncio.create_task(
                         self.backfill_service.repair_all_active_pairs()
@@ -238,7 +234,7 @@ class StreamManager:
             result = await session.execute(
                 select(TrackedPair).where(
                     TrackedPair.exchange == "binance",
-                    TrackedPair.market == "futures",
+                    TrackedPair.market == "spot",
                     TrackedPair.status == "active",
                 )
             )
@@ -283,7 +279,7 @@ class StreamManager:
         runtime_state.last_kline_event = kline_event
 
         exchange = "binance"
-        market = "futures"
+        market = "spot"
         symbol = str(kline_event["symbol"]).upper()
         interval = str(kline_event["interval"])
 

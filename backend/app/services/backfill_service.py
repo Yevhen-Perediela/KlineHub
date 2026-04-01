@@ -8,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from ..config import settings
-from ..exchanges.binance_futures import BinanceFuturesAdapter
+from ..exchanges.binance_spot import BinanceSpotAdapter
 from ..models import Candle, TrackedPair
 from ..services.candle_service import CandleService
 from ..utils.intervals import get_interval_ms, latest_closed_open_time
@@ -27,11 +27,8 @@ class MissingRange:
 class BackfillService:
     def __init__(self, session_factory: async_sessionmaker[AsyncSession]) -> None:
         self.session_factory = session_factory
-        self.adapter = BinanceFuturesAdapter()
+        self.adapter = BinanceSpotAdapter()
 
-    # ----------------------------
-    # public API for endpoint usage
-    # ----------------------------
     async def ensure_range_loaded(
         self,
         *,
@@ -43,11 +40,6 @@ class BackfillService:
         from_ts: int,
         to_ts: int,
     ) -> int:
-        """
-        Ensures that all CLOSED candles for [from_ts .. to_ts] open_time range
-        exist in DB. Missing ranges are fetched directly from exchange and saved.
-        Returns number of candles fetched from exchange.
-        """
         symbol = symbol.upper()
         self._assert_supported(exchange=exchange, market=market)
 
@@ -121,9 +113,6 @@ class BackfillService:
 
         return total_fetched
 
-    # ----------------------------
-    # existing flows
-    # ----------------------------
     async def backfill_recent_pair(
         self,
         *,
@@ -253,7 +242,7 @@ class BackfillService:
             result = await session.execute(
                 select(TrackedPair).where(
                     TrackedPair.exchange == "binance",
-                    TrackedPair.market == "futures",
+                    TrackedPair.market == "spot",
                     TrackedPair.status == "active",
                 )
             )
@@ -289,13 +278,10 @@ class BackfillService:
         logger.info("repair_all_active_pairs finished, total repaired candles=%s", total_repaired)
         return total_repaired
 
-    # ----------------------------
-    # internal helpers
-    # ----------------------------
     def _assert_supported(self, *, exchange: str, market: str) -> None:
-        if exchange != "binance" or market != "futures":
+        if exchange != "binance" or market != "spot":
             raise ValueError(
-                f"BackfillService currently supports only binance futures, "
+                f"BackfillService currently supports only binance spot, "
                 f"got exchange={exchange} market={market}"
             )
 
@@ -487,14 +473,12 @@ class BackfillService:
 
         last = events[-1]
 
-        # якщо adapter повертає pydantic/dataclass/object
         if hasattr(last, "open_time"):
             try:
                 return int(last.open_time)
             except Exception:
                 pass
 
-        # якщо adapter повертає dict
         if isinstance(last, dict):
             value = last.get("open_time")
             if value is not None:
