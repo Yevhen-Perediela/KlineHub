@@ -11,6 +11,7 @@ from ..utils.intervals import (
     floor_to_interval_open,
     interval_can_aggregate,
     interval_sort_key,
+    is_supported_interval,
     next_interval_open,
 )
 
@@ -31,7 +32,11 @@ class AggregationService:
             Candle.is_closed.is_(True),
         )
         result = await db.execute(stmt)
-        intervals = [value for value in result.scalars().all() if value is not None]
+        intervals = [
+            value
+            for value in result.scalars().all()
+            if value is not None and is_supported_interval(value)
+        ]
         return sorted(intervals, key=interval_sort_key)
 
     @classmethod

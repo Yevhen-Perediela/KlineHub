@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, Query
+from fastapi.exceptions import RequestValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..db import get_db, SessionLocal
@@ -16,20 +17,84 @@ router = APIRouter(prefix="/api", tags=["api"])
 
 backfill_service = BackfillService(SessionLocal)
 
+
+def _parse_int_query(
+    value: str | int | None,
+    *,
+    field_name: str,
+    default: int | None = None,
+    minimum: int | None = None,
+    maximum: int | None = None,
+) -> int | None:
+    if value is None:
+        return default
+
+    if isinstance(value, int):
+        parsed = value
+    else:
+        cleaned = value.strip().strip("'").strip('"')
+        if not cleaned:
+            return default
+
+        try:
+            parsed = int(cleaned)
+        except ValueError as exc:
+            raise RequestValidationError(
+                [
+                    {
+                        "type": "int_parsing",
+                        "loc": ("query", field_name),
+                        "msg": "Input should be a valid integer",
+                        "input": value,
+                    }
+                ]
+            ) from exc
+
+    if minimum is not None and parsed < minimum:
+        raise RequestValidationError(
+            [
+                {
+                    "type": "greater_than_equal",
+                    "loc": ("query", field_name),
+                    "msg": f"Input should be greater than or equal to {minimum}",
+                    "input": parsed,
+                    "ctx": {"ge": minimum},
+                }
+            ]
+        )
+
+    if maximum is not None and parsed > maximum:
+        raise RequestValidationError(
+            [
+                {
+                    "type": "less_than_equal",
+                    "loc": ("query", field_name),
+                    "msg": f"Input should be less than or equal to {maximum}",
+                    "input": parsed,
+                    "ctx": {"le": maximum},
+                }
+            ]
+        )
+
+    return parsed
+
 @router.get("/klines", response_model=KlineHistoryResponse)
 async def get_klines(
     exchange: str = Query(...),
     market: str = Query(...),
     symbol: str = Query(...),
     interval: str = Query(...),
-    from_ts: int | None = Query(default=None, alias="from"),
-    to_ts: int | None = Query(default=None, alias="to"),
-    limit: int = Query(default=500, ge=1, le=5000),
+    from_ts: str | int | None = Query(default=None, alias="from"),
+    to_ts: str | int | None = Query(default=None, alias="to"),
+    limit: str | int | None = Query(default=500),
     db: AsyncSession = Depends(get_db),
 ) -> KlineHistoryResponse:
     exchange = exchange.lower()
     market = market.lower()
     symbol = symbol.upper()
+    from_ts = _parse_int_query(from_ts, field_name="from")
+    to_ts = _parse_int_query(to_ts, field_name="to")
+    limit = _parse_int_query(limit, field_name="limit", default=500, minimum=1, maximum=5000)
 
     if not is_supported_interval(interval):
         return KlineHistoryResponse(bars=[], noData=True)
