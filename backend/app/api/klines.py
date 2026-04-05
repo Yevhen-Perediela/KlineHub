@@ -1,17 +1,15 @@
 from fastapi import APIRouter, Depends, Query
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..db import get_db, SessionLocal
-from ..models import Candle
 from ..schemas import KlineHistoryResponse, KlineBarResponse
 from ..services.aggregation_service import AggregationService
 from ..services.backfill_service import BackfillService
 from ..utils.intervals import (
-    get_interval_ms,
-    is_aggregated_interval,
+    floor_to_interval_open,
     is_supported_interval,
     latest_closed_open_time,
+    next_interval_open,
 )
 
 router = APIRouter(prefix="/api", tags=["api"])
@@ -38,54 +36,41 @@ async def get_klines(
 
     now_ms = __import__("time").time_ns() // 1_000_000
 
-    base_interval = "1h" if is_aggregated_interval(interval) else interval
-    base_interval_ms = get_interval_ms(base_interval)
-
     if to_ts is None:
-        to_ts = latest_closed_open_time(now_ms=now_ms, interval=base_interval)
+        to_ts = latest_closed_open_time(now_ms=now_ms, interval=interval)
     else:
-        to_ts = min(
-            (to_ts // base_interval_ms) * base_interval_ms,
-            latest_closed_open_time(now_ms=now_ms, interval=base_interval),
-        )
+        to_ts = min(floor_to_interval_open(to_ts, interval), latest_closed_open_time(now_ms=now_ms, interval=interval))
 
     if from_ts is None:
-        from_ts = to_ts - ((limit - 1) * base_interval_ms)
+        from_ts = to_ts
+        for _ in range(limit - 1):
+            previous = floor_to_interval_open(from_ts - 1, interval)
+            if previous >= from_ts:
+                break
+            from_ts = previous
     else:
-        from_ts = (from_ts // base_interval_ms) * base_interval_ms
+        from_ts = floor_to_interval_open(from_ts, interval)
 
     if from_ts > to_ts:
         return KlineHistoryResponse(bars=[], noData=True)
 
     should_backfill = exchange == "binance" and market in {"spot", "futures"}
+    source_interval = await AggregationService.pick_best_source_interval(
+        db=db,
+        exchange=exchange,
+        market=market,
+        symbol=symbol,
+        target_interval=interval,
+    )
 
-    if is_aggregated_interval(interval):
-        if should_backfill:
-            await backfill_service.ensure_range_loaded(
-                db=db,
-                exchange=exchange,
-                market=market,
-                symbol=symbol,
-                interval="1h",
-                from_ts=from_ts,
-                to_ts=to_ts,
-            )
+    if source_interval is None:
+        source_interval = interval
 
-        bars = await AggregationService.get_aggregated_bars_from_1h(
-            db=db,
-            exchange=exchange,
-            market=market,
-            symbol=symbol,
-            target_interval=interval,
-            from_ts=from_ts,
-            to_ts=to_ts,
-            limit=limit,
-        )
-
-        return KlineHistoryResponse(
-            bars=[KlineBarResponse(**bar) for bar in bars],
-            noData=len(bars) == 0,
-        )
+    source_from = floor_to_interval_open(from_ts, source_interval)
+    source_to = floor_to_interval_open(
+        next_interval_open(to_ts, interval) - 1,
+        source_interval,
+    )
 
     if should_backfill:
         await backfill_service.ensure_range_loaded(
@@ -93,39 +78,36 @@ async def get_klines(
             exchange=exchange,
             market=market,
             symbol=symbol,
+            interval=source_interval,
+            from_ts=source_from,
+            to_ts=source_to,
+        )
+
+    if source_interval == interval:
+        bars = await AggregationService.get_bars_from_interval(
+            db=db,
+            exchange=exchange,
+            market=market,
+            symbol=symbol,
             interval=interval,
             from_ts=from_ts,
             to_ts=to_ts,
+            limit=limit,
         )
-
-    stmt = select(Candle).where(
-        Candle.exchange == exchange,
-        Candle.market == market,
-        Candle.symbol == symbol,
-        Candle.interval == interval,
-        Candle.is_closed.is_(True),
-        Candle.open_time >= from_ts,
-        Candle.open_time <= to_ts,
-    )
-
-    stmt = stmt.order_by(Candle.open_time.asc()).limit(limit)
-
-    result = await db.execute(stmt)
-    candles = result.scalars().all()
-
-    bars = [
-        KlineBarResponse(
-            time=int(item.open_time),
-            open=float(item.open),
-            high=float(item.high),
-            low=float(item.low),
-            close=float(item.close),
-            volume=float(item.volume),
+    else:
+        bars = await AggregationService.get_aggregated_bars(
+            db=db,
+            exchange=exchange,
+            market=market,
+            symbol=symbol,
+            source_interval=source_interval,
+            target_interval=interval,
+            from_ts=from_ts,
+            to_ts=to_ts,
+            limit=limit,
         )
-        for item in candles
-    ]
 
     return KlineHistoryResponse(
-        bars=bars,
+        bars=[KlineBarResponse(**bar) for bar in bars],
         noData=len(bars) == 0,
     )

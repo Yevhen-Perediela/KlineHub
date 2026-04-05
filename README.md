@@ -1,23 +1,21 @@
-# 📊 KlineHub API Documentation
+# KlineHub API Documentation
 
 ## Overview
 
 KlineHub is a standalone market data service that provides:
 
-* Real-time kline (candlestick) streaming
-* Historical kline data
-* Internal pair tracking system
-* High-performance Redis + PostgreSQL storage
+- Real-time kline streaming
+- Historical kline data
+- Internal pair tracking
+- Redis + PostgreSQL storage
 
 It is designed to:
 
-* Reduce exchange API load
-* Serve multiple projects
-* Provide stable and reusable market data
+- Reduce exchange API load
+- Serve multiple projects
+- Provide stable reusable market data
 
----
-
-# 🌐 Base URL
+## Base URL
 
 ```
 http://<host>:8088
@@ -25,27 +23,44 @@ http://<host>:8088
 
 ---
 
-# 🔐 API Types
+## API Types
 
-| Type          | Description                             |
-| ------------- | --------------------------------------- |
-| `/api/*`      | Public API (for frontend / TradingView) |
-| `/internal/*` | Internal API (management, pairs, stats) |
-| `/ws/*`       | WebSocket real-time data                |
+| Type | Description |
+| --- | --- |
+| `/api/*` | Public API for frontend / TradingView |
+| `/internal/*` | Internal API for management and stats |
+| `/ws/*` | WebSocket real-time data |
 
----
+## Public API
 
-# 📡 1. Public API
-
-## Get Klines (History)
-
-### Endpoint
+### Get Klines
 
 ```
 GET /api/klines
 ```
 
-### Query Params
+Supported intervals:
+
+- `1m`
+- `5m`
+- `15m`
+- `30m`
+- `1h`
+- `2h`
+- `4h`
+- `12h`
+- `1d`
+- `3d`
+- `1w`
+- `1M`
+
+Behavior:
+
+- If candles for the requested range already exist in PostgreSQL, the API returns them from DB.
+- If candles are missing and `exchange=binance` with `market=spot` or `market=futures`, the API fetches the missing range directly from Binance and stores it in PostgreSQL.
+- If the requested interval is not stored directly but can be built from a smaller stored interval, the API aggregates candles from DB and returns the completed bars only.
+
+Query params:
 
 | Param    | Type   | Required | Example |
 | -------- | ------ | -------- | ------- |
@@ -53,15 +68,17 @@ GET /api/klines
 | market   | string | ✅        | futures |
 | symbol   | string | ✅        | BTCUSDT |
 | interval | string | ✅        | 1m      |
+| from     | int ms | ❌        | 1743465600000 |
+| to       | int ms | ❌        | 1743552000000 |
 | limit    | int    | ❌        | 100     |
 
-### Example
+Quick example:
 
 ```
 GET /api/klines?exchange=binance&market=futures&symbol=BTCUSDT&interval=1m&limit=10
 ```
 
-### Response
+Response:
 
 ```json
 {
@@ -79,17 +96,57 @@ GET /api/klines?exchange=binance&market=futures&symbol=BTCUSDT&interval=1m&limit
 }
 ```
 
----
+### Test requests
 
-# ⚙️ 2. Internal API
+Fast smoke tests:
 
-## Health Check
+```bash
+curl "http://127.0.0.1:8088/api/klines?exchange=binance&market=futures&symbol=BTCUSDT&interval=1m&limit=10"
+curl "http://127.0.0.1:8088/api/klines?exchange=binance&market=futures&symbol=BTCUSDT&interval=5m&limit=10"
+curl "http://127.0.0.1:8088/api/klines?exchange=binance&market=futures&symbol=BTCUSDT&interval=15m&limit=10"
+curl "http://127.0.0.1:8088/api/klines?exchange=binance&market=futures&symbol=BTCUSDT&interval=30m&limit=10"
+curl "http://127.0.0.1:8088/api/klines?exchange=binance&market=futures&symbol=BTCUSDT&interval=1h&limit=10"
+curl "http://127.0.0.1:8088/api/klines?exchange=binance&market=futures&symbol=BTCUSDT&interval=2h&limit=10"
+curl "http://127.0.0.1:8088/api/klines?exchange=binance&market=futures&symbol=BTCUSDT&interval=4h&limit=10"
+curl "http://127.0.0.1:8088/api/klines?exchange=binance&market=futures&symbol=BTCUSDT&interval=12h&limit=10"
+curl "http://127.0.0.1:8088/api/klines?exchange=binance&market=futures&symbol=BTCUSDT&interval=1d&limit=10"
+curl "http://127.0.0.1:8088/api/klines?exchange=binance&market=futures&symbol=BTCUSDT&interval=3d&limit=10"
+curl "http://127.0.0.1:8088/api/klines?exchange=binance&market=futures&symbol=BTCUSDT&interval=1w&limit=10"
+curl "http://127.0.0.1:8088/api/klines?exchange=binance&market=futures&symbol=BTCUSDT&interval=1M&limit=10"
+```
+
+Spot examples:
+
+```bash
+curl "http://127.0.0.1:8088/api/klines?exchange=binance&market=spot&symbol=BTCUSDT&interval=1m&limit=20"
+curl "http://127.0.0.1:8088/api/klines?exchange=binance&market=spot&symbol=ETHUSDT&interval=1d&limit=30"
+```
+
+Range examples with explicit timestamps in milliseconds:
+
+```bash
+curl "http://127.0.0.1:8088/api/klines?exchange=binance&market=futures&symbol=BTCUSDT&interval=1h&from=1743465600000&to=1743552000000"
+curl "http://127.0.0.1:8088/api/klines?exchange=binance&market=futures&symbol=BTCUSDT&interval=1d&from=1740787200000&to=1743379200000"
+curl "http://127.0.0.1:8088/api/klines?exchange=binance&market=futures&symbol=BTCUSDT&interval=1M&from=1735689600000&to=1743465600000"
+```
+
+Pair tracking example before websocket / warm cache tests:
+
+```bash
+curl -X POST "http://127.0.0.1:8088/internal/pairs" \
+  -H "Content-Type: application/json" \
+  -d '{"exchange":"binance","market":"futures","symbol":"BTCUSDT","interval":"1m","backfill_limit":300}'
+```
+
+## Internal API
+
+### Health Check
 
 ```
 GET /internal/health
 ```
 
-### Response
+Response:
 
 ```json
 {
@@ -103,31 +160,25 @@ GET /internal/health
 }
 ```
 
----
-
-## Stats
+### Stats
 
 ```
 GET /internal/stats
 ```
 
----
-
-## Get All Tracked Pairs
+### Get All Tracked Pairs
 
 ```
 GET /internal/pairs
 ```
 
----
-
-## Add / Track Pair
+### Add / Track Pair
 
 ```
 POST /internal/pairs
 ```
 
-### Body
+Body:
 
 ```json
 {
@@ -139,45 +190,35 @@ POST /internal/pairs
 }
 ```
 
----
-
-## Pause Pair
+### Pause Pair
 
 ```
 POST /internal/pairs/{exchange}/{market}/{symbol}/{interval}/pause
 ```
 
----
-
-## Resume Pair
+### Resume Pair
 
 ```
 POST /internal/pairs/{exchange}/{market}/{symbol}/{interval}/resume
 ```
 
----
-
-## Delete Pair
+### Delete Pair
 
 ```
 DELETE /internal/pairs/{exchange}/{market}/{symbol}/{interval}
 ```
 
----
+## WebSocket API
 
-# 🔌 3. WebSocket API
-
-## Endpoint
+Endpoint:
 
 ```
 ws://<host>:8088/ws/market
 ```
 
----
+### Connect
 
-## Connect
-
-### First message
+First message:
 
 ```json
 {
@@ -185,9 +226,7 @@ ws://<host>:8088/ws/market
 }
 ```
 
----
-
-## Subscribe
+### Subscribe
 
 ```json
 {
@@ -199,9 +238,7 @@ ws://<host>:8088/ws/market
 }
 ```
 
----
-
-## Unsubscribe
+### Unsubscribe
 
 ```json
 {
@@ -213,9 +250,7 @@ ws://<host>:8088/ws/market
 }
 ```
 
----
-
-## Response
+### Response
 
 ```json
 {
@@ -224,9 +259,7 @@ ws://<host>:8088/ws/market
 }
 ```
 
----
-
-## Real-time Kline Event
+### Real-time Kline Event
 
 ```json
 {
@@ -248,16 +281,15 @@ ws://<host>:8088/ws/market
 }
 ```
 
----
+## Architecture Notes
 
-# 🧠 Architecture Notes
+- Uses Binance WebSocket streams
+- Stores:
 
-* Uses **Binance WebSocket streams**
-* Stores:
-
-  * Open candles → Redis
-  * Closed candles → PostgreSQL
-* Backfill system ensures no missing candles
+  - Open candles -> Redis
+  - Closed candles -> PostgreSQL
+- Backfill loads missing candles from Binance when needed
+- Aggregation can build larger candles from smaller intervals already stored in PostgreSQL
 * One stream per symbol+interval (shared across all users)
 
 ---

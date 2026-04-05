@@ -2,49 +2,143 @@ from __future__ import annotations
 
 from decimal import Decimal
 
-from sqlalchemy import select
+from sqlalchemy import distinct, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models import Candle
-from ..utils.intervals import get_interval_ms, is_aggregated_interval
+from ..utils.intervals import (
+    count_interval_steps,
+    floor_to_interval_open,
+    interval_can_aggregate,
+    interval_sort_key,
+    next_interval_open,
+)
 
 
 class AggregationService:
     @staticmethod
-    async def get_aggregated_bars_from_1h(
+    async def get_available_intervals(
+        *,
+        db: AsyncSession,
+        exchange: str,
+        market: str,
+        symbol: str,
+    ) -> list[str]:
+        stmt = select(distinct(Candle.interval)).where(
+            Candle.exchange == exchange,
+            Candle.market == market,
+            Candle.symbol == symbol.upper(),
+            Candle.is_closed.is_(True),
+        )
+        result = await db.execute(stmt)
+        intervals = [value for value in result.scalars().all() if value is not None]
+        return sorted(intervals, key=interval_sort_key)
+
+    @classmethod
+    async def pick_best_source_interval(
+        cls,
         *,
         db: AsyncSession,
         exchange: str,
         market: str,
         symbol: str,
         target_interval: str,
+    ) -> str | None:
+        available = await cls.get_available_intervals(
+            db=db,
+            exchange=exchange,
+            market=market,
+            symbol=symbol,
+        )
+
+        candidates = [
+            interval for interval in available if interval_can_aggregate(interval, target_interval)
+        ]
+
+        if not candidates:
+            return None
+
+        return max(candidates, key=interval_sort_key)
+
+    @staticmethod
+    async def get_bars_from_interval(
+        *,
+        db: AsyncSession,
+        exchange: str,
+        market: str,
+        symbol: str,
+        interval: str,
         from_ts: int | None,
         to_ts: int | None,
         limit: int,
     ) -> list[dict]:
-        if not is_aggregated_interval(target_interval):
-            raise ValueError(f"Unsupported aggregated interval: {target_interval}")
+        stmt = select(Candle).where(
+            Candle.exchange == exchange,
+            Candle.market == market,
+            Candle.symbol == symbol.upper(),
+            Candle.interval == interval,
+            Candle.is_closed.is_(True),
+        )
 
-        target_ms = get_interval_ms(target_interval)
-        source_ms = get_interval_ms("1h")
+        if from_ts is not None:
+            stmt = stmt.where(Candle.open_time >= from_ts)
 
-        if target_ms % source_ms != 0:
-            raise ValueError(f"Target interval must be divisible by 1h: {target_interval}")
+        if to_ts is not None:
+            stmt = stmt.where(Candle.open_time <= to_ts)
+
+        stmt = stmt.order_by(Candle.open_time.asc()).limit(limit)
+
+        result = await db.execute(stmt)
+        candles = result.scalars().all()
+
+        return [
+            {
+                "time": int(item.open_time),
+                "open": float(item.open),
+                "high": float(item.high),
+                "low": float(item.low),
+                "close": float(item.close),
+                "volume": float(item.volume),
+            }
+            for item in candles
+        ]
+
+    @staticmethod
+    async def get_aggregated_bars(
+        *,
+        db: AsyncSession,
+        exchange: str,
+        market: str,
+        symbol: str,
+        source_interval: str,
+        target_interval: str,
+        from_ts: int | None,
+        to_ts: int | None,
+        limit: int,
+    ) -> list[dict]:
+        if not interval_can_aggregate(source_interval, target_interval):
+            raise ValueError(
+                f"Cannot aggregate {source_interval} candles into {target_interval}"
+            )
 
         stmt = select(Candle).where(
             Candle.exchange == exchange,
             Candle.market == market,
             Candle.symbol == symbol.upper(),
-            Candle.interval == "1h",
+            Candle.interval == source_interval,
             Candle.is_closed.is_(True),
         )
 
         if from_ts is not None:
-            source_from = from_ts - target_ms
+            source_from = floor_to_interval_open(from_ts, target_interval)
             stmt = stmt.where(Candle.open_time >= source_from)
 
         if to_ts is not None:
-            stmt = stmt.where(Candle.open_time <= to_ts)
+            source_to = floor_to_interval_open(
+                next_interval_open(to_ts, target_interval) - 1,
+                source_interval,
+            )
+            stmt = stmt.where(Candle.open_time <= source_to)
 
         stmt = stmt.order_by(Candle.open_time.asc())
 
@@ -57,7 +151,7 @@ class AggregationService:
         buckets: dict[int, list[Candle]] = {}
 
         for candle in candles:
-            bucket_open = (int(candle.open_time) // target_ms) * target_ms
+            bucket_open = floor_to_interval_open(int(candle.open_time), target_interval)
             buckets.setdefault(bucket_open, []).append(candle)
 
         bars: list[dict] = []
@@ -67,10 +161,25 @@ class AggregationService:
             if not items:
                 continue
 
-            expected_count = target_ms // source_ms
+            expected_count = count_interval_steps(
+                bucket_open,
+                next_interval_open(bucket_open, target_interval) - 1,
+                source_interval,
+            )
+            actual_count = len(items)
 
-            # Skip incomplete bucket
-            if len(items) < expected_count:
+            if actual_count < expected_count:
+                continue
+
+            complete = True
+            expected_open = bucket_open
+            for item in items:
+                if int(item.open_time) != expected_open:
+                    complete = False
+                    break
+                expected_open = next_interval_open(expected_open, source_interval)
+
+            if not complete:
                 continue
 
             first = items[0]
@@ -92,4 +201,7 @@ class AggregationService:
 
             bars.append(bar)
 
-        return bars[:limit]
+            if len(bars) >= limit:
+                break
+
+        return bars

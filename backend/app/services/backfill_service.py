@@ -13,7 +13,13 @@ from ..exchanges.binance_futures import BinanceFuturesAdapter
 from ..exchanges.binance_spot import BinanceSpotAdapter, InvalidSpotSymbolError
 from ..models import Candle, TrackedPair
 from ..services.candle_service import CandleService
-from ..utils.intervals import get_interval_ms, latest_closed_open_time
+from ..utils.intervals import (
+    count_interval_steps,
+    floor_to_interval_open,
+    get_interval_ms,
+    latest_closed_open_time,
+    next_interval_open,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -56,10 +62,9 @@ class BackfillService:
         symbol = symbol.upper()
         self._assert_supported(exchange=exchange, market=market)
 
-        interval_ms = get_interval_ms(interval)
         now_ms = int(time.time() * 1000)
 
-        normalized_from = self._floor_open_time(from_ts, interval_ms)
+        normalized_from = floor_to_interval_open(from_ts, interval)
         normalized_to = self._normalize_to_closed_open_time(
             to_ts=to_ts,
             interval=interval,
@@ -208,7 +213,6 @@ class BackfillService:
         symbol = symbol.upper()
         self._assert_supported(exchange=exchange, market=market)
 
-        interval_ms = get_interval_ms(interval)
         now_ms = int(time.time() * 1000)
         target_latest_closed_open = latest_closed_open_time(now_ms=now_ms, interval=interval)
 
@@ -231,7 +235,7 @@ class BackfillService:
                 limit=settings.default_backfill_limit,
             )
 
-        missing_start = int(latest.open_time) + interval_ms
+        missing_start = next_interval_open(int(latest.open_time), interval)
         missing_end = target_latest_closed_open
 
         if missing_start > missing_end:
@@ -327,11 +331,8 @@ class BackfillService:
                 f"got exchange={exchange} market={market}"
             )
 
-    def _floor_open_time(self, ts: int, interval_ms: int) -> int:
-        return (int(ts) // interval_ms) * interval_ms
-
     def _normalize_to_closed_open_time(self, *, to_ts: int, interval: str, now_ms: int) -> int:
-        target = self._floor_open_time(to_ts, get_interval_ms(interval))
+        target = floor_to_interval_open(to_ts, interval)
         latest_closed = latest_closed_open_time(now_ms=now_ms, interval=interval)
         return min(target, latest_closed)
 
@@ -346,8 +347,6 @@ class BackfillService:
         from_ts: int,
         to_ts: int,
     ) -> list[MissingRange]:
-        interval_ms = get_interval_ms(interval)
-
         stmt = (
             select(Candle.open_time)
             .where(
@@ -383,11 +382,11 @@ class BackfillService:
                     missing_ranges.append(
                         MissingRange(
                             start_open_time=range_start,
-                            end_open_time=current - interval_ms,
+                            end_open_time=self._previous_open_time(current, interval),
                         )
                     )
                     range_start = None
-            current += interval_ms
+            current = next_interval_open(current, interval)
 
         if range_start is not None:
             missing_ranges.append(
@@ -410,8 +409,6 @@ class BackfillService:
         start_open_time: int,
         end_open_time: int,
     ) -> int:
-        interval_ms = get_interval_ms(interval)
-
         if start_open_time > end_open_time:
             return 0
 
@@ -421,12 +418,14 @@ class BackfillService:
         chunk_start = start_open_time
 
         while chunk_start <= end_open_time:
-            remaining_count = ((end_open_time - chunk_start) // interval_ms) + 1
+            remaining_count = count_interval_steps(chunk_start, end_open_time, interval)
             limit = min(max(1, remaining_count), settings.max_backfill_limit)
-            chunk_end = min(
-                end_open_time,
-                chunk_start + (limit - 1) * interval_ms,
-            )
+            chunk_end = chunk_start
+            for _ in range(limit - 1):
+                next_open = next_interval_open(chunk_end, interval)
+                if next_open > end_open_time:
+                    break
+                chunk_end = next_open
 
             logger.info(
                 "Fetching missing candles: %s %s %s %s start=%s end=%s limit=%s",
@@ -444,7 +443,7 @@ class BackfillService:
                     symbol=symbol,
                     interval=interval,
                     start_time=chunk_start,
-                    end_time=chunk_end + interval_ms - 1,
+                    end_time=next_interval_open(chunk_end, interval) - 1,
                     limit=limit,
                 )
             except InvalidSpotSymbolError:
@@ -495,7 +494,7 @@ class BackfillService:
                 )
                 break
 
-            next_start = last_open_time + interval_ms
+            next_start = next_interval_open(last_open_time, interval)
             if next_start <= chunk_start:
                 logger.warning(
                     "next_start did not advance for %s %s (%s <= %s), stopping fetch loop",
@@ -518,6 +517,12 @@ class BackfillService:
         )
 
         return total_saved
+
+    def _previous_open_time(self, open_time: int, interval: str) -> int:
+        if interval == "1M":
+            floored = floor_to_interval_open(open_time - 1, interval)
+            return floored
+        return open_time - get_interval_ms(interval)
 
     def _extract_last_open_time(self, events: list) -> int | None:
         if not events:
