@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from datetime import datetime
 from decimal import Decimal
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
@@ -221,3 +222,37 @@ class CandleService:
             ).order_by(Candle.open_time.desc()).limit(1)
         )
         return result.scalar_one_or_none()
+
+    @classmethod
+    async def get_open_candle(
+        cls,
+        *,
+        exchange: str,
+        market: str,
+        symbol: str,
+        interval: str,
+    ) -> dict[str, Any] | None:
+        redis = get_redis()
+        payload = await redis.get(cls._open_key(exchange, market, symbol, interval))
+        if not payload:
+            return None
+
+        try:
+            event = json.loads(payload)
+        except json.JSONDecodeError:
+            return None
+
+        if not isinstance(event, dict):
+            return None
+
+        try:
+            return {
+                "time": int(event["open_time"]),
+                "open": float(event["open"]),
+                "high": float(event["high"]),
+                "low": float(event["low"]),
+                "close": float(event["close"]),
+                "volume": float(event["volume"]),
+            }
+        except (KeyError, TypeError, ValueError):
+            return None

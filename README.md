@@ -59,6 +59,7 @@ Behavior:
 - If candles for the requested range already exist in PostgreSQL, the API returns them from DB.
 - If candles are missing and `exchange=binance` with `market=spot` or `market=futures`, the API fetches the missing range directly from Binance and stores it in PostgreSQL.
 - If the requested interval is not stored directly but can be built from a smaller stored interval, the API aggregates candles from DB and returns the completed bars only.
+- If a live open candle for the requested interval exists in Redis, the API also appends that current in-progress candle with the latest streamed `close` price.
 
 Query params:
 

@@ -6,10 +6,11 @@ from ..db import get_db, SessionLocal
 from ..schemas import KlineHistoryResponse, KlineBarResponse
 from ..services.aggregation_service import AggregationService
 from ..services.backfill_service import BackfillService
+from ..services.candle_service import CandleService
 from ..utils.intervals import (
     floor_to_interval_open,
-    is_supported_interval,
     latest_closed_open_time,
+    is_supported_interval,
     next_interval_open,
 )
 
@@ -100,11 +101,13 @@ async def get_klines(
         return KlineHistoryResponse(bars=[], noData=True)
 
     now_ms = __import__("time").time_ns() // 1_000_000
+    current_open_ts = floor_to_interval_open(now_ms, interval)
+    latest_closed_ts = latest_closed_open_time(now_ms=now_ms, interval=interval)
 
     if to_ts is None:
-        to_ts = latest_closed_open_time(now_ms=now_ms, interval=interval)
+        to_ts = current_open_ts
     else:
-        to_ts = min(floor_to_interval_open(to_ts, interval), latest_closed_open_time(now_ms=now_ms, interval=interval))
+        to_ts = min(floor_to_interval_open(to_ts, interval), current_open_ts)
 
     if from_ts is None:
         from_ts = to_ts
@@ -132,12 +135,13 @@ async def get_klines(
         source_interval = interval
 
     source_from = floor_to_interval_open(from_ts, source_interval)
+    history_to_ts = min(to_ts, latest_closed_ts)
     source_to = floor_to_interval_open(
-        next_interval_open(to_ts, interval) - 1,
+        next_interval_open(history_to_ts, interval) - 1,
         source_interval,
     )
 
-    if should_backfill:
+    if should_backfill and from_ts <= history_to_ts:
         await backfill_service.ensure_range_loaded(
             db=db,
             exchange=exchange,
@@ -156,7 +160,7 @@ async def get_klines(
             symbol=symbol,
             interval=interval,
             from_ts=from_ts,
-            to_ts=to_ts,
+            to_ts=history_to_ts,
             limit=limit,
         )
     else:
@@ -168,9 +172,23 @@ async def get_klines(
             source_interval=source_interval,
             target_interval=interval,
             from_ts=from_ts,
-            to_ts=to_ts,
+            to_ts=history_to_ts,
             limit=limit,
         )
+
+    if to_ts >= current_open_ts:
+        open_bar = await CandleService.get_open_candle(
+            exchange=exchange,
+            market=market,
+            symbol=symbol,
+            interval=interval,
+        )
+        if open_bar is not None and from_ts <= open_bar["time"] <= to_ts:
+            bars = [bar for bar in bars if bar["time"] != open_bar["time"]]
+            bars.append(open_bar)
+            bars.sort(key=lambda bar: bar["time"])
+            if len(bars) > limit:
+                bars = bars[-limit:]
 
     return KlineHistoryResponse(
         bars=[KlineBarResponse(**bar) for bar in bars],
