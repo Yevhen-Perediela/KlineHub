@@ -1,18 +1,24 @@
 from __future__ import annotations
 
 import json
+import time
 from typing import Any
 
 import httpx
+
+from .base import ProviderAdapter
 
 
 class InvalidSpotSymbolError(ValueError):
     pass
 
 
-class BinanceSpotAdapter:
+class BinanceSpotAdapter(ProviderAdapter):
+    provider_id = "binance_spot"
+
     REST_BASE_URL = "https://api.binance.com"
     WS_BASE_URL = "wss://stream.binance.com:9443"
+    _instrument_cache: tuple[float, list[dict[str, Any]]] | None = None
 
     def build_stream_name(self, *, symbol: str, interval: str) -> str:
         return f"{symbol.lower()}@kline_{interval}"
@@ -52,6 +58,7 @@ class BinanceSpotAdapter:
     async def fetch_klines(
         self,
         *,
+        market: str,
         symbol: str,
         interval: str,
         start_time: int | None = None,
@@ -115,3 +122,41 @@ class BinanceSpotAdapter:
                 }
             )
         return events
+
+    async def list_instruments(self) -> list[dict[str, Any]]:
+        now = time.time()
+        if self._instrument_cache is not None:
+            cached_at, items = self._instrument_cache
+            if (now - cached_at) < 900:
+                return items
+
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.get(f"{self.REST_BASE_URL}/api/v3/exchangeInfo")
+
+        response.raise_for_status()
+        payload = response.json()
+        symbols = payload.get("symbols")
+        if not isinstance(symbols, list):
+            return []
+
+        items = [
+            {
+                "symbol": str(item.get("symbol", "")).upper(),
+                "status": str(item.get("status", "")),
+                "base_asset": str(item.get("baseAsset", "")).upper(),
+                "quote_asset": str(item.get("quoteAsset", "")).upper(),
+                "is_spot_trading_allowed": bool(item.get("isSpotTradingAllowed", False)),
+            }
+            for item in symbols
+            if isinstance(item, dict)
+        ]
+        self._instrument_cache = (now, items)
+        return items
+
+    async def validate_symbol(self, *, market: str, symbol: str, interval: str) -> None:
+        instruments = await self.list_instruments()
+        instrument = next((item for item in instruments if item["symbol"] == symbol.upper()), None)
+        if instrument is None:
+            raise InvalidSpotSymbolError(f"Unknown Binance spot symbol: {symbol}")
+        if instrument["status"] != "TRADING" or not instrument["is_spot_trading_allowed"]:
+            raise ValueError(f"Binance spot instrument {symbol.upper()} is not tradable")

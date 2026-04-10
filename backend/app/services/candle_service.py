@@ -160,7 +160,7 @@ class CandleService:
                     "volume": Decimal(str(event["volume"])),
                     "trades_count": int(event["trades_count"]) if event.get("trades_count") is not None else None,
                     "is_closed": True,
-                    "source": "rest" if event.get("stream") is None else "ws",
+                    "source": str(event.get("source") or ("rest" if event.get("stream") is None else "ws"))[:16],
                     "created_at": now,
                     "updated_at": now,
                 }

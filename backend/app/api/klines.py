@@ -3,6 +3,7 @@ from fastapi.exceptions import RequestValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..db import get_db, SessionLocal
+from ..exchanges.registry import get_canonical_interval
 from ..schemas import KlineHistoryResponse, KlineBarResponse
 from ..services.aggregation_service import AggregationService
 from ..services.backfill_service import BackfillService
@@ -122,7 +123,7 @@ async def get_klines(
     if from_ts > to_ts:
         return KlineHistoryResponse(bars=[], noData=True)
 
-    should_backfill = exchange == "binance" and market in {"spot", "futures"}
+    should_backfill = True
     source_interval = await AggregationService.pick_best_source_interval(
         db=db,
         exchange=exchange,
@@ -132,7 +133,11 @@ async def get_klines(
     )
 
     if source_interval is None:
-        source_interval = interval
+        source_interval = get_canonical_interval(
+            exchange=exchange,
+            market=market,
+            requested_interval=interval,
+        )
 
     source_from = floor_to_interval_open(from_ts, source_interval)
     history_to_ts = min(to_ts, latest_closed_ts)

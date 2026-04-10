@@ -11,6 +11,9 @@ class Settings(BaseSettings):
     redis_url: str = "redis://redis:6379/0"
 
     internal_api_token: str | None = None
+    coinmarketcap_api_key: str | None = None
+    coinmarketcap_api_url: str = "https://pro-api.coinmarketcap.com"
+    coinmarketcap_listings_limit: int = 500
 
     recent_bars_limit: int = 300
     ws_receive_timeout_sec: int = 60
@@ -20,6 +23,15 @@ class Settings(BaseSettings):
     ws_reconnect_max_sec: int = 30
 
     binance_futures_rest_url: str = "https://fapi.binance.com"
+    bybit_rest_url: str = "https://api.bybit.com"
+    bybit_ws_url: str = "wss://stream.bybit.com"
+    bybit_instruments_cache_ttl_sec: int = 900
+    oanda_rest_url: str = "https://api-fxtrade.oanda.com"
+    oanda_stream_url: str = "https://stream-fxtrade.oanda.com"
+    oanda_api_token: str | None = None
+    oanda_account_id: str | None = None
+    oanda_instruments_cache_ttl_sec: int = 900
+    oanda_reconcile_interval_sec: int = 20
     default_backfill_limit: int = 300
     max_backfill_limit: int = 1000
 

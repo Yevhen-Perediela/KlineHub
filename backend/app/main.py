@@ -12,8 +12,10 @@ from .api.stats import router as stats_router
 from .api.pairs import router as pairs_router
 from .api.klines import router as klines_router
 from .api.ws import router as ws_router
+from .api.refresh_popular_pairs import router as refresh_popular_pairs_router
 from .schemas import InternalHealthResponse
 from .services.backfill_service import BackfillService
+from .services.popular_pairs_service import PopularPairsService
 from .services.realtime_service import RealtimeService
 from .services.stream_manager import StreamManager
 from .state import runtime_state
@@ -29,6 +31,11 @@ stream_manager = StreamManager(
     session_factory=SessionLocal,
     backfill_service=backfill_service,
     realtime_service=realtime_service,
+)
+popular_pairs_service = PopularPairsService(
+    session_factory=SessionLocal,
+    backfill_service=backfill_service,
+    stream_manager=stream_manager,
 )
 
 
@@ -58,6 +65,7 @@ app = FastAPI(
 app.state.stream_manager = stream_manager
 app.state.backfill_service = backfill_service
 app.state.realtime_service = realtime_service
+app.state.popular_pairs_service = popular_pairs_service
 
 
 @app.get("/")
@@ -115,5 +123,6 @@ async def internal_health():
 app.include_router(health_router)
 app.include_router(stats_router)
 app.include_router(pairs_router)
+app.include_router(refresh_popular_pairs_router)
 app.include_router(klines_router)
 app.include_router(ws_router)

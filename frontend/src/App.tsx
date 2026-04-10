@@ -68,6 +68,42 @@ type PairListResponse = {
   count: number;
 };
 
+type RefreshPopularPairsResponse = {
+  ok: boolean;
+  dry_run: boolean;
+  mode: "pause" | "delete";
+  summary: {
+    desired_total: number;
+    current_total: number;
+    to_add: number;
+    to_resume: number;
+    to_pause: number;
+    to_delete: number;
+    unchanged: number;
+    failed: number;
+    reload_triggered: boolean;
+  };
+  groups: Record<
+    string,
+    {
+      desired: number;
+      added: number;
+      resumed: number;
+      paused: number;
+      deleted: number;
+      unchanged: number;
+    }
+  >;
+  failed_items: Array<{
+    exchange: string;
+    market: string;
+    symbol: string;
+    interval: string;
+    action: string;
+    error?: string | null;
+  }>;
+};
+
 type FormState = {
   exchange: string;
   market: string;
@@ -77,12 +113,16 @@ type FormState = {
 };
 
 const defaultForm: FormState = {
-  exchange: "binance",
+  exchange: "bybit",
   market: "futures",
   symbol: "BTCUSDT",
   interval: "1h",
   backfill_limit: "300",
 };
+
+const exchangeOptions = ["bybit", "binance", "oanda"];
+const marketOptions = ["spot", "futures", "forex"];
+const intervalOptions = ["1m", "5m", "15m", "30m", "1h", "4h", "1d"];
 
 function formatDate(value?: string | null) {
   if (!value) return "—";
@@ -140,6 +180,38 @@ function StatCard({
   );
 }
 
+function CompactStatCard({
+  title,
+  value,
+  subtitle,
+  icon: Icon,
+  accent,
+}: {
+  title: string;
+  value: string | number;
+  subtitle?: string;
+  icon: any;
+  accent: string;
+}) {
+  return (
+    <div className="relative overflow-hidden rounded-[24px] border border-white/10 bg-white/[0.06] p-4 shadow-xl shadow-black/15">
+      <div className={`absolute inset-x-0 top-0 h-px ${accent}`} />
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="text-sm leading-5 text-slate-400">{title}</div>
+          <div className="mt-3 break-words text-4xl font-semibold leading-none tracking-tight text-white">
+            {value}
+          </div>
+          {subtitle ? <div className="mt-3 text-sm leading-5 text-slate-400">{subtitle}</div> : null}
+        </div>
+        <div className="shrink-0 rounded-2xl border border-white/10 bg-white/5 p-2.5">
+          <Icon className="h-4 w-4 text-slate-100" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function JsonCard({ title, value }: { title: string; value: unknown }) {
   return (
     <div className="rounded-[28px] border border-white/10 bg-slate-950/50 p-4 shadow-inner shadow-black/20">
@@ -169,6 +241,9 @@ export default function KlineHubMonitorDashboard() {
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [form, setForm] = useState<FormState>(defaultForm);
+  const [refreshDryRun, setRefreshDryRun] = useState(false);
+  const [refreshMode, setRefreshMode] = useState<"pause" | "delete">("pause");
+  const [refreshResult, setRefreshResult] = useState<RefreshPopularPairsResponse | null>(null);
 
   const loadAll = async () => {
     setError("");
@@ -241,6 +316,74 @@ export default function KlineHubMonitorDashboard() {
       await loadAll();
     } catch (err) {
       setError(err instanceof Error ? err.message : `Failed to ${action} pair`);
+    } finally {
+      setMutating(false);
+    }
+  };
+
+  const submitPopularRefresh = async () => {
+    setMutating(true);
+    setError("");
+    try {
+      const result = await fetchJson<RefreshPopularPairsResponse>("/internal/refresh-popular-pairs", {
+        method: "POST",
+        body: JSON.stringify({
+          dry_run: refreshDryRun,
+          mode: refreshMode,
+          crypto_interval: "1h",
+          oanda_interval: "1m",
+          binance: {
+            spot_base_limit: 150,
+            futures_base_limit: 150,
+            quotes: ["USDT", "USDC"],
+          },
+          bybit: {
+            spot_base_limit: 100,
+            futures_base_limit: 100,
+            quotes: ["USDT", "USDC"],
+          },
+          oanda: {
+            enable_forex: true,
+            enable_metals: true,
+            forex_symbols: [
+              "EUR_USD",
+              "GBP_USD",
+              "USD_JPY",
+              "AUD_USD",
+              "USD_CAD",
+              "USD_CHF",
+              "NZD_USD",
+              "EUR_CHF",
+              "EUR_CAD",
+              "EUR_AUD",
+              "EUR_NZD",
+              "EUR_JPY",
+              "GBP_JPY",
+              "EUR_GBP",
+              "GBP_CHF",
+              "GBP_CAD",
+              "GBP_AUD",
+              "AUD_JPY",
+              "AUD_CAD",
+              "AUD_CHF",
+              "CAD_JPY",
+              "CAD_CHF",
+              "CHF_JPY",
+              "NZD_JPY",
+              "USD_SEK",
+              "USD_NOK",
+              "USD_SGD",
+              "EUR_SEK",
+              "EUR_NOK",
+            ],
+            metals_symbols: ["XAU_USD", "XAG_USD"],
+          },
+        }),
+      });
+      setRefreshResult(result);
+      await loadAll();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to refresh popular pairs");
     } finally {
       setMutating(false);
     }
@@ -407,6 +550,84 @@ export default function KlineHubMonitorDashboard() {
 
           <div className="space-y-6">
             <div className="rounded-[32px] border border-white/10 bg-white/5 p-5 shadow-2xl shadow-black/20 backdrop-blur-xl md:p-6">
+              <div className="mb-6 flex items-center gap-3">
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
+                  <RefreshCw className="h-4 w-4 text-slate-100" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-semibold text-white">Refresh popular pairs</h2>
+                  <p className="text-sm text-slate-400">One backend action to sync Binance, Bybit, and curated OANDA pairs.</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 text-sm">
+                <div className="grid grid-cols-2 gap-3">
+                  <label className="rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-3 text-slate-300">
+                    <div className="mb-2 text-xs uppercase tracking-[0.18em] text-slate-500">Mode</div>
+                    <select
+                      value={refreshMode}
+                      onChange={(e) => setRefreshMode(e.target.value as "pause" | "delete")}
+                      className="w-full bg-transparent text-white outline-none"
+                    >
+                      <option value="pause" className="bg-slate-950 text-white">Safe pause sync</option>
+                      <option value="delete" className="bg-slate-950 text-white">Hard delete sync</option>
+                    </select>
+                  </label>
+                  <label className="flex items-center gap-3 rounded-2xl border border-white/10 bg-slate-950/50 px-4 py-3 text-slate-300">
+                    <input
+                      type="checkbox"
+                      checked={refreshDryRun}
+                      onChange={(e) => setRefreshDryRun(e.target.checked)}
+                      className="h-4 w-4 rounded border-white/20 bg-slate-900"
+                    />
+                    <span>Dry run preview only</span>
+                  </label>
+                </div>
+
+                <button
+                  onClick={submitPopularRefresh}
+                  disabled={mutating}
+                  className="rounded-2xl bg-gradient-to-r from-emerald-400 to-cyan-500 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:opacity-90 disabled:opacity-50"
+                >
+                  Refresh popular pairs
+                </button>
+              </div>
+
+              {refreshResult ? (
+                <div className="mt-5 space-y-4">
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <CompactStatCard
+                      title="Desired"
+                      value={refreshResult.summary.desired_total}
+                      accent="bg-gradient-to-r from-cyan-400/80 to-blue-500/80"
+                      icon={Activity}
+                    />
+                    <CompactStatCard
+                      title="Add / Resume"
+                      value={`${refreshResult.summary.to_add} / ${refreshResult.summary.to_resume}`}
+                      accent="bg-gradient-to-r from-emerald-400/80 to-teal-500/80"
+                      icon={Plus}
+                    />
+                    <CompactStatCard
+                      title="Pause / Delete"
+                      value={`${refreshResult.summary.to_pause} / ${refreshResult.summary.to_delete}`}
+                      accent="bg-gradient-to-r from-amber-400/80 to-orange-500/80"
+                      icon={PauseCircle}
+                    />
+                    <CompactStatCard
+                      title="Failed"
+                      value={refreshResult.summary.failed}
+                      subtitle={refreshResult.summary.reload_triggered ? "reload triggered" : "no reload"}
+                      accent="bg-gradient-to-r from-rose-400/80 to-pink-500/80"
+                      icon={AlertTriangle}
+                    />
+                  </div>
+                  <JsonCard title="Popular pair sync result" value={refreshResult} />
+                </div>
+              ) : null}
+            </div>
+
+            <div className="rounded-[32px] border border-white/10 bg-white/5 p-5 shadow-2xl shadow-black/20 backdrop-blur-xl md:p-6">
               <div className="mb-5 flex items-center gap-3">
                 <div className="rounded-2xl border border-white/10 bg-white/5 p-3">
                   <Plus className="h-4 w-4 text-slate-100" />
@@ -418,10 +639,40 @@ export default function KlineHubMonitorDashboard() {
               </div>
 
               <div className="grid grid-cols-1 gap-3 text-sm md:grid-cols-2">
-                <input value={form.exchange} onChange={(e) => setForm((s) => ({ ...s, exchange: e.target.value }))} className="rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-cyan-400/30" placeholder="exchange" />
-                <input value={form.market} onChange={(e) => setForm((s) => ({ ...s, market: e.target.value }))} className="rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-cyan-400/30" placeholder="market" />
+                <select
+                  value={form.exchange}
+                  onChange={(e) => setForm((s) => ({ ...s, exchange: e.target.value }))}
+                  className="rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white outline-none focus:border-cyan-400/30"
+                >
+                  {exchangeOptions.map((exchange) => (
+                    <option key={exchange} value={exchange} className="bg-slate-950 text-white">
+                      {exchange}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={form.market}
+                  onChange={(e) => setForm((s) => ({ ...s, market: e.target.value }))}
+                  className="rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white outline-none focus:border-cyan-400/30"
+                >
+                  {marketOptions.map((market) => (
+                    <option key={market} value={market} className="bg-slate-950 text-white">
+                      {market}
+                    </option>
+                  ))}
+                </select>
                 <input value={form.symbol} onChange={(e) => setForm((s) => ({ ...s, symbol: e.target.value.toUpperCase() }))} className="rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-cyan-400/30" placeholder="symbol" />
-                <input value={form.interval} onChange={(e) => setForm((s) => ({ ...s, interval: e.target.value }))} className="rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-cyan-400/30" placeholder="interval" />
+                <select
+                  value={form.interval}
+                  onChange={(e) => setForm((s) => ({ ...s, interval: e.target.value }))}
+                  className="rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white outline-none focus:border-cyan-400/30"
+                >
+                  {intervalOptions.map((interval) => (
+                    <option key={interval} value={interval} className="bg-slate-950 text-white">
+                      {interval}
+                    </option>
+                  ))}
+                </select>
                 <input value={form.backfill_limit} onChange={(e) => setForm((s) => ({ ...s, backfill_limit: e.target.value }))} className="rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-cyan-400/30 md:col-span-2" placeholder="backfill limit" />
               </div>
 

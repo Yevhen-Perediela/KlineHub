@@ -1,16 +1,21 @@
 from __future__ import annotations
 
 import json
+import time
 from typing import Any
 
 import aiohttp
+import httpx
 
 from ..config import settings
 from ..utils.intervals import latest_closed_open_time
+from .base import ProviderAdapter
 
 
-class BinanceFuturesAdapter:
+class BinanceFuturesAdapter(ProviderAdapter):
+    provider_id = "binance_futures"
     BASE_WS_URL = "wss://fstream.binance.com/stream"
+    _instrument_cache: tuple[float, list[dict[str, Any]]] | None = None
 
     @staticmethod
     def build_stream_name(symbol: str, interval: str) -> str:
@@ -58,6 +63,7 @@ class BinanceFuturesAdapter:
     async def fetch_klines(
         self,
         *,
+        market: str,
         symbol: str,
         interval: str,
         limit: int = 300,
@@ -127,3 +133,41 @@ class BinanceFuturesAdapter:
     def _now_ms() -> int:
         import time
         return int(time.time() * 1000)
+
+    async def list_instruments(self) -> list[dict[str, Any]]:
+        now = time.time()
+        if self._instrument_cache is not None:
+            cached_at, items = self._instrument_cache
+            if (now - cached_at) < 900:
+                return items
+
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.get(f"{settings.binance_futures_rest_url}/fapi/v1/exchangeInfo")
+
+        response.raise_for_status()
+        payload = response.json()
+        symbols = payload.get("symbols")
+        if not isinstance(symbols, list):
+            return []
+
+        items = [
+            {
+                "symbol": str(item.get("symbol", "")).upper(),
+                "status": str(item.get("status", "")),
+                "base_asset": str(item.get("baseAsset", "")).upper(),
+                "quote_asset": str(item.get("quoteAsset", "")).upper(),
+                "contract_type": str(item.get("contractType", "")),
+            }
+            for item in symbols
+            if isinstance(item, dict)
+        ]
+        self._instrument_cache = (now, items)
+        return items
+
+    async def validate_symbol(self, *, market: str, symbol: str, interval: str) -> None:
+        instruments = await self.list_instruments()
+        instrument = next((item for item in instruments if item["symbol"] == symbol.upper()), None)
+        if instrument is None:
+            raise ValueError(f"Unknown Binance futures symbol: {symbol}")
+        if instrument["status"] != "TRADING":
+            raise ValueError(f"Binance futures instrument {symbol.upper()} is not tradable")

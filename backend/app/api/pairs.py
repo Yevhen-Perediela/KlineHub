@@ -42,11 +42,20 @@ async def create_pair(
     db: AsyncSession = Depends(get_db),
 ) -> TrackedPairResponse:
     symbol = payload.symbol.upper()
+    exchange = payload.exchange.lower()
+    market = payload.market.lower()
+
+    await request.app.state.backfill_service.validate_pair(
+        exchange=exchange,
+        market=market,
+        symbol=symbol,
+        interval=payload.interval,
+    )
 
     existing_q = await db.execute(
         select(TrackedPair).where(
-            TrackedPair.exchange == payload.exchange,
-            TrackedPair.market == payload.market,
+            TrackedPair.exchange == exchange,
+            TrackedPair.market == market,
             TrackedPair.symbol == symbol,
             TrackedPair.interval == payload.interval,
         )
@@ -61,8 +70,8 @@ async def create_pair(
             await db.refresh(existing)
 
         await request.app.state.backfill_service.backfill_recent_pair(
-            exchange=payload.exchange,
-            market=payload.market,
+            exchange=exchange,
+            market=market,
             symbol=symbol,
             interval=payload.interval,
             limit=payload.backfill_limit or settings.default_backfill_limit,
@@ -71,8 +80,8 @@ async def create_pair(
         return TrackedPairResponse.model_validate(existing)
 
     item = TrackedPair(
-        exchange=payload.exchange,
-        market=payload.market,
+        exchange=exchange,
+        market=market,
         symbol=symbol,
         interval=payload.interval,
         status="active",
@@ -85,8 +94,8 @@ async def create_pair(
     await db.refresh(item)
 
     await request.app.state.backfill_service.backfill_recent_pair(
-        exchange=payload.exchange,
-        market=payload.market,
+        exchange=exchange,
+        market=market,
         symbol=symbol,
         interval=payload.interval,
         limit=payload.backfill_limit or settings.default_backfill_limit,

@@ -9,8 +9,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from ..config import settings
-from ..exchanges.binance_futures import BinanceFuturesAdapter
-from ..exchanges.binance_spot import BinanceSpotAdapter, InvalidSpotSymbolError
+from ..exchanges.binance_spot import InvalidSpotSymbolError
+from ..exchanges.bybit import InvalidBybitSymbolError
+from ..exchanges.oanda import InvalidOandaInstrumentError
+from ..exchanges.registry import get_adapter, get_canonical_interval
 from ..models import Candle, TrackedPair
 from ..services.candle_service import CandleService
 from ..utils.intervals import (
@@ -33,20 +35,24 @@ class MissingRange:
 class BackfillService:
     def __init__(self, session_factory: async_sessionmaker[AsyncSession]) -> None:
         self.session_factory = session_factory
-        self.spot_adapter = BinanceSpotAdapter()
-        self.futures_adapter = BinanceFuturesAdapter()
 
     def _get_adapter(self, *, exchange: str, market: str):
-        if exchange != "binance":
-            raise ValueError(f"Unsupported exchange: {exchange}")
+        return get_adapter(exchange=exchange, market=market)
 
-        if market == "spot":
-            return self.spot_adapter
-
-        if market == "futures":
-            return self.futures_adapter
-
-        raise ValueError(f"Unsupported market: {market}")
+    async def validate_pair(
+        self,
+        *,
+        exchange: str,
+        market: str,
+        symbol: str,
+        interval: str,
+    ) -> None:
+        adapter = self._get_adapter(exchange=exchange, market=market)
+        await adapter.validate_symbol(
+            market=market,
+            symbol=symbol.upper(),
+            interval=interval,
+        )
 
     async def ensure_range_loaded(
         self,
@@ -143,6 +149,11 @@ class BackfillService:
         symbol = symbol.upper()
         self._assert_supported(exchange=exchange, market=market)
         adapter = self._get_adapter(exchange=exchange, market=market)
+        canonical_interval = get_canonical_interval(
+            exchange=exchange,
+            market=market,
+            requested_interval=interval,
+        )
 
         limit = min(limit or settings.default_backfill_limit, settings.max_backfill_limit)
 
@@ -157,20 +168,23 @@ class BackfillService:
 
         try:
             events = await adapter.fetch_klines(
+                market=market,
                 symbol=symbol,
-                interval=interval,
+                interval=canonical_interval,
                 limit=limit,
             )
-        except InvalidSpotSymbolError:
+        except (InvalidSpotSymbolError, InvalidBybitSymbolError, InvalidOandaInstrumentError):
             logger.warning(
-                "Invalid Binance spot symbol in recent backfill: %s %s",
+                "Invalid instrument in recent backfill: %s %s %s %s",
+                exchange,
+                market,
                 symbol,
-                interval,
+                canonical_interval,
             )
             raise
 
         if not events:
-            logger.info("Backfill recent pair got no events for %s %s", symbol, interval)
+            logger.info("Backfill recent pair got no events for %s %s", symbol, canonical_interval)
             return 0
 
         async with self.session_factory() as session:
@@ -179,7 +193,7 @@ class BackfillService:
                 exchange=exchange,
                 market=market,
                 symbol=symbol,
-                interval=interval,
+                interval=canonical_interval,
                 events=events,
             )
             await session.commit()
@@ -188,14 +202,14 @@ class BackfillService:
             exchange=exchange,
             market=market,
             symbol=symbol,
-            interval=interval,
+            interval=canonical_interval,
             events=events,
         )
 
         logger.info(
             "Backfill recent pair finished: %s %s %s candles=%s",
             symbol,
-            interval,
+            canonical_interval,
             exchange,
             len(events),
         )
@@ -212,9 +226,17 @@ class BackfillService:
     ) -> int:
         symbol = symbol.upper()
         self._assert_supported(exchange=exchange, market=market)
+        canonical_interval = get_canonical_interval(
+            exchange=exchange,
+            market=market,
+            requested_interval=interval,
+        )
 
         now_ms = int(time.time() * 1000)
-        target_latest_closed_open = latest_closed_open_time(now_ms=now_ms, interval=interval)
+        target_latest_closed_open = latest_closed_open_time(
+            now_ms=now_ms,
+            interval=canonical_interval,
+        )
 
         async with self.session_factory() as session:
             latest = await CandleService.get_latest_closed_candle(
@@ -222,20 +244,20 @@ class BackfillService:
                 exchange=exchange,
                 market=market,
                 symbol=symbol,
-                interval=interval,
+                interval=canonical_interval,
             )
 
         if latest is None:
-            logger.info("No existing candles for %s %s, doing recent backfill", symbol, interval)
+            logger.info("No existing candles for %s %s, doing recent backfill", symbol, canonical_interval)
             return await self.backfill_recent_pair(
                 exchange=exchange,
                 market=market,
                 symbol=symbol,
-                interval=interval,
+                interval=canonical_interval,
                 limit=settings.default_backfill_limit,
             )
 
-        missing_start = next_interval_open(int(latest.open_time), interval)
+        missing_start = next_interval_open(int(latest.open_time), canonical_interval)
         missing_end = target_latest_closed_open
 
         if missing_start > missing_end:
@@ -256,25 +278,68 @@ class BackfillService:
                 exchange=exchange,
                 market=market,
                 symbol=symbol,
-                interval=interval,
+                interval=canonical_interval,
                 start_open_time=missing_start,
                 end_open_time=missing_end,
             )
+
+    async def reconcile_recent_pair(
+        self,
+        *,
+        exchange: str,
+        market: str,
+        symbol: str,
+        interval: str,
+    ) -> int:
+        symbol = symbol.upper()
+        adapter = self._get_adapter(exchange=exchange, market=market)
+        canonical_interval = get_canonical_interval(
+            exchange=exchange,
+            market=market,
+            requested_interval=interval,
+        )
+        events = await adapter.fetch_klines(
+            market=market,
+            symbol=symbol,
+            interval=canonical_interval,
+            limit=3,
+        )
+        closed_events = [event for event in events if bool(event.get("is_closed"))]
+        if not closed_events:
+            return 0
+
+        for event in closed_events:
+            event["source"] = "reconciled"
+
+        async with self.session_factory() as session:
+            await CandleService.upsert_closed_candles(
+                db=session,
+                exchange=exchange,
+                market=market,
+                symbol=symbol,
+                interval=canonical_interval,
+                events=closed_events,
+            )
+
+        await CandleService.write_many_closed_candles_to_redis(
+            exchange=exchange,
+            market=market,
+            symbol=symbol,
+            interval=canonical_interval,
+            events=closed_events,
+        )
+        return len(closed_events)
 
     async def repair_all_active_pairs(self) -> int:
         total_repaired = 0
 
         async with self.session_factory() as session:
             result = await session.execute(
-                select(TrackedPair).where(
-                    TrackedPair.exchange == "binance",
-                    TrackedPair.market == "spot",
-                    TrackedPair.status == "active",
-                )
+                select(TrackedPair).where(TrackedPair.status == "active")
             )
             pairs = result.scalars().all()
 
-        logger.info("repair_all_active_pairs found %s active spot pairs", len(pairs))
+        logger.info("repair_all_active_pairs found %s active pairs", len(pairs))
 
         semaphore = asyncio.Semaphore(10)
         repaired_values: list[int] = []
@@ -291,9 +356,11 @@ class BackfillService:
                     )
                     repaired_values.append(repaired)
 
-                except InvalidSpotSymbolError:
+                except (InvalidSpotSymbolError, InvalidBybitSymbolError, InvalidOandaInstrumentError):
                     logger.warning(
-                        "Pair %s %s is invalid on Binance spot. Pausing it.",
+                        "Pair %s %s %s %s is invalid. Pausing it.",
+                        pair.exchange,
+                        pair.market,
                         pair.symbol,
                         pair.interval,
                     )
@@ -325,11 +392,7 @@ class BackfillService:
         return total_repaired
 
     def _assert_supported(self, *, exchange: str, market: str) -> None:
-        if exchange != "binance" or market not in {"spot", "futures"}:
-            raise ValueError(
-                f"BackfillService supports only binance spot/futures, "
-                f"got exchange={exchange} market={market}"
-            )
+        get_adapter(exchange=exchange, market=market)
 
     def _normalize_to_closed_open_time(self, *, to_ts: int, interval: str, now_ms: int) -> int:
         target = floor_to_interval_open(to_ts, interval)
@@ -440,15 +503,18 @@ class BackfillService:
 
             try:
                 events = await adapter.fetch_klines(
+                    market=market,
                     symbol=symbol,
                     interval=interval,
                     start_time=chunk_start,
                     end_time=next_interval_open(chunk_end, interval) - 1,
                     limit=limit,
                 )
-            except InvalidSpotSymbolError:
+            except (InvalidSpotSymbolError, InvalidBybitSymbolError, InvalidOandaInstrumentError):
                 logger.warning(
-                    "Invalid Binance spot symbol while fetching range: %s %s",
+                    "Invalid instrument while fetching range: %s %s %s %s",
+                    exchange,
+                    market,
                     symbol,
                     interval,
                 )

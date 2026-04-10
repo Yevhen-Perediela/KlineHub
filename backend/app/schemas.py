@@ -1,4 +1,6 @@
 from datetime import datetime
+from typing import Literal
+
 from pydantic import BaseModel, Field, ConfigDict
 
 
@@ -22,8 +24,8 @@ class StatsResponse(BaseModel):
 
 
 class TrackedPairCreate(BaseModel):
-    exchange: str = Field(..., examples=["binance"])
-    market: str = Field(..., examples=["futures"])
+    exchange: str = Field(..., examples=["binance", "bybit", "oanda"])
+    market: str = Field(..., examples=["futures", "spot", "forex"])
     symbol: str = Field(..., examples=["BTCUSDT"])
     interval: str = Field(default="1h", examples=["1h"])
     source: str = Field(default="api")
@@ -87,3 +89,113 @@ class KlineBarResponse(BaseModel):
 class KlineHistoryResponse(BaseModel):
     bars: list[KlineBarResponse]
     noData: bool
+
+
+class RefreshPopularPairsExchangeConfig(BaseModel):
+    quotes: list[str] = Field(default_factory=lambda: ["USDT", "USDC"])
+
+
+class RefreshPopularPairsBinanceConfig(RefreshPopularPairsExchangeConfig):
+    spot_base_limit: int = Field(default=150, ge=1, le=1000)
+    futures_base_limit: int = Field(default=150, ge=1, le=1000)
+
+
+class RefreshPopularPairsBybitConfig(RefreshPopularPairsExchangeConfig):
+    spot_base_limit: int = Field(default=100, ge=1, le=1000)
+    futures_base_limit: int = Field(default=100, ge=1, le=1000)
+
+
+class RefreshPopularPairsOandaConfig(BaseModel):
+    enable_forex: bool = True
+    enable_metals: bool = True
+    forex_symbols: list[str] = Field(
+        default_factory=lambda: [
+            "EUR_USD",
+            "GBP_USD",
+            "USD_JPY",
+            "AUD_USD",
+            "USD_CAD",
+            "USD_CHF",
+            "NZD_USD",
+            "EUR_CHF",
+            "EUR_CAD",
+            "EUR_AUD",
+            "EUR_NZD",
+            "EUR_JPY",
+            "GBP_JPY",
+            "EUR_GBP",
+            "GBP_CHF",
+            "GBP_CAD",
+            "GBP_AUD",
+            "AUD_JPY",
+            "AUD_CAD",
+            "AUD_CHF",
+            "CAD_JPY",
+            "CAD_CHF",
+            "CHF_JPY",
+            "NZD_JPY",
+            "USD_SEK",
+            "USD_NOK",
+            "USD_SGD",
+            "EUR_SEK",
+            "EUR_NOK",
+        ]
+    )
+    metals_symbols: list[str] = Field(default_factory=lambda: ["XAU_USD", "XAG_USD"])
+
+
+class RefreshPopularPairsRequest(BaseModel):
+    dry_run: bool = False
+    mode: Literal["pause", "delete"] = "pause"
+    crypto_interval: str = "1h"
+    oanda_interval: str = "1m"
+    binance: RefreshPopularPairsBinanceConfig = Field(default_factory=RefreshPopularPairsBinanceConfig)
+    bybit: RefreshPopularPairsBybitConfig = Field(default_factory=RefreshPopularPairsBybitConfig)
+    oanda: RefreshPopularPairsOandaConfig = Field(default_factory=RefreshPopularPairsOandaConfig)
+
+
+class RefreshPopularPairsGroupSummary(BaseModel):
+    desired: int = 0
+    added: int = 0
+    resumed: int = 0
+    paused: int = 0
+    deleted: int = 0
+    unchanged: int = 0
+
+
+class RefreshPopularPairsItem(BaseModel):
+    exchange: str
+    market: str
+    symbol: str
+    interval: str
+    action: str
+    reason: str | None = None
+    status: str | None = None
+    error: str | None = None
+    group: str | None = None
+
+
+class RefreshPopularPairsSummary(BaseModel):
+    desired_total: int
+    current_total: int
+    to_add: int
+    to_resume: int
+    to_pause: int
+    to_delete: int
+    unchanged: int
+    failed: int
+    reload_triggered: bool
+
+
+class RefreshPopularPairsResponse(BaseModel):
+    ok: bool
+    dry_run: bool
+    mode: Literal["pause", "delete"]
+    summary: RefreshPopularPairsSummary
+    groups: dict[str, RefreshPopularPairsGroupSummary]
+    added: list[RefreshPopularPairsItem]
+    resumed: list[RefreshPopularPairsItem]
+    paused: list[RefreshPopularPairsItem]
+    deleted: list[RefreshPopularPairsItem]
+    unchanged: list[RefreshPopularPairsItem]
+    failed_items: list[RefreshPopularPairsItem]
