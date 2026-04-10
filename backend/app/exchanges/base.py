@@ -19,6 +19,9 @@ class ProviderAdapter:
     native_kline_stream: bool = True
     canonical_interval: str | None = None
 
+    def get_history_backfill_interval(self, requested_interval: str) -> str:
+        return self.canonical_interval or requested_interval
+
     def build_stream_name(self, *, symbol: str, interval: str) -> str:
         raise NotImplementedError
 

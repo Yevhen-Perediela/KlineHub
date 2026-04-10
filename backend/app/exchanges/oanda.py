@@ -30,7 +30,22 @@ class OandaAdapter(ProviderAdapter):
 
     GRANULARITY_MAP = {
         "1m": "M1",
+        "5m": "M5",
+        "15m": "M15",
+        "30m": "M30",
+        "1h": "H1",
+        "2h": "H2",
+        "4h": "H4",
+        "12h": "H12",
+        "1d": "D",
+        "1w": "W",
+        "1M": "M",
     }
+
+    def get_history_backfill_interval(self, requested_interval: str) -> str:
+        if requested_interval in self.GRANULARITY_MAP:
+            return requested_interval
+        return super().get_history_backfill_interval(requested_interval)
 
     def build_stream_name(self, *, symbol: str, interval: str) -> str:
         if interval != "1m":

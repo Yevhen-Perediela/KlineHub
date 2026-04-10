@@ -3,7 +3,7 @@ from fastapi.exceptions import RequestValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..db import get_db, SessionLocal
-from ..exchanges.registry import get_canonical_interval
+from ..exchanges.registry import get_adapter, get_canonical_interval
 from ..schemas import KlineHistoryResponse, KlineBarResponse
 from ..services.aggregation_service import AggregationService
 from ..services.backfill_service import BackfillService
@@ -124,6 +124,9 @@ async def get_klines(
         return KlineHistoryResponse(bars=[], noData=True)
 
     should_backfill = True
+    adapter = get_adapter(exchange=exchange, market=market)
+    preferred_history_interval = adapter.get_history_backfill_interval(interval)
+
     source_interval = await AggregationService.pick_best_source_interval(
         db=db,
         exchange=exchange,
@@ -132,7 +135,13 @@ async def get_klines(
         target_interval=interval,
     )
 
-    if source_interval is None:
+    if source_interval == interval:
+        preferred_history_interval = interval
+    elif preferred_history_interval == interval:
+        # Prefer provider-native history for the requested interval over
+        # aggregating from smaller candles that may contain trading-session gaps.
+        source_interval = interval
+    elif source_interval is None:
         source_interval = get_canonical_interval(
             exchange=exchange,
             market=market,
