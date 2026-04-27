@@ -7,7 +7,7 @@ from ..exchanges.registry import get_adapter, get_canonical_interval
 from ..schemas import KlineHistoryResponse, KlineBarResponse
 from ..services.aggregation_service import AggregationService
 from ..services.backfill_service import BackfillService
-from ..services.candle_service import CandleService
+from ..services.open_candle_service import OpenCandleService
 from ..utils.intervals import (
     floor_to_interval_open,
     latest_closed_open_time,
@@ -191,11 +191,14 @@ async def get_klines(
         )
 
     if to_ts >= current_open_ts:
-        open_bar = await CandleService.get_open_candle(
+        open_bar = await OpenCandleService.get_open_bar(
+            db=db,
             exchange=exchange,
             market=market,
             symbol=symbol,
             interval=interval,
+            current_open_ts=current_open_ts,
+            now_ms=now_ms,
         )
         if open_bar is not None and from_ts <= open_bar["time"] <= to_ts:
             bars = [bar for bar in bars if bar["time"] != open_bar["time"]]

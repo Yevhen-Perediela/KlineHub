@@ -26,3 +26,6 @@ backend/app/services/__pycache__/stream_manager.cpython-312.pyc
 backend/app/utils/__pycache__/__init__.cpython-312.pyc
 backend/app/utils/__pycache__/intervals.cpython-312.pyc
 backend/app/services/__pycache__/__init__.cpython-312.pyc
+backend/app/exchanges/__pycache__/
+backend/app/api/__pycache__/refresh_popular_pairs.cpython-312.pyc
+backend/app/services/__pycache__/popular_pairs_service.cpython-312.pyc
