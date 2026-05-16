@@ -103,6 +103,7 @@ services:
       klinehub_internal:
         aliases:
           - klinehub_nginx
+      edge:    
 
 volumes:
   marketdata_redis_data:
@@ -114,3 +115,6 @@ networks:
 
   klinehub_internal:
     external: true
+
+  edge:
+    external: true  
