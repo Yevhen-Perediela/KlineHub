@@ -34,15 +34,16 @@ class OpenCandleService:
         current_open_ts: int,
         now_ms: int,
     ) -> dict[str, float | int] | None:
-        open_bar = await cls._get_exact_redis_open_bar(
-            exchange=exchange,
-            market=market,
-            symbol=symbol,
-            interval=interval,
-            current_open_ts=current_open_ts,
-        )
-        if open_bar is not None:
-            return open_bar
+        if not (exchange == "bybit" and market == "futures"):
+            open_bar = await cls._get_exact_redis_open_bar(
+                exchange=exchange,
+                market=market,
+                symbol=symbol,
+                interval=interval,
+                current_open_ts=current_open_ts,
+            )
+            if open_bar is not None:
+                return open_bar
 
         if exchange == "oanda" and market in {"forex", "metals", "stocks"}:
             open_bar = await cls._get_oanda_aggregated_open_bar(

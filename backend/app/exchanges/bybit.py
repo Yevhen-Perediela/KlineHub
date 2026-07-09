@@ -109,6 +109,7 @@ class BybitAdapter(ProviderAdapter):
         limit: int | None = None,
     ) -> list[dict[str, Any]]:
         category = self._market_to_category(market)
+        symbol = await self.resolve_symbol(market=market, symbol=symbol)
         params: dict[str, Any] = {
             "category": category,
             "symbol": symbol.upper(),
@@ -120,9 +121,12 @@ class BybitAdapter(ProviderAdapter):
         if end_time is not None:
             params["end"] = int(end_time)
 
+        is_mark_price = market.lower() == "futures"
+        endpoint = "mark-price-kline" if is_mark_price else "kline"
+
         async with httpx.AsyncClient(timeout=30.0) as client:
             response = await client.get(
-                f"{settings.bybit_rest_url}/v5/market/kline",
+                f"{settings.bybit_rest_url}/v5/market/{endpoint}",
                 params=params,
             )
 
@@ -137,10 +141,13 @@ class BybitAdapter(ProviderAdapter):
         latest_closed_open = latest_closed_open_time(now_ms=self._now_ms(), interval=interval)
 
         for row in sorted(rows, key=lambda item: int(item[0])):
-            if not isinstance(row, list) or len(row) < 7:
+            min_row_length = 5 if is_mark_price else 7
+            if not isinstance(row, list) or len(row) < min_row_length:
                 continue
             open_time = int(row[0])
             close_time = next_interval_open(open_time, interval) - 1
+            volume = "0" if is_mark_price else str(row[5])
+            turnover = "0" if is_mark_price else str(row[6])
             events.append(
                 {
                     "symbol": symbol.upper(),
@@ -151,9 +158,10 @@ class BybitAdapter(ProviderAdapter):
                     "high": str(row[2]),
                     "low": str(row[3]),
                     "close": str(row[4]),
-                    "volume": str(row[5]),
-                    "turnover": str(row[6]),
+                    "volume": volume,
+                    "turnover": turnover,
                     "is_closed": open_time <= latest_closed_open,
+                    "source": "bybit_mark" if is_mark_price else "rest",
                 }
             )
 
@@ -207,12 +215,24 @@ class BybitAdapter(ProviderAdapter):
 
     async def validate_symbol(self, *, market: str, symbol: str, interval: str) -> None:
         self._to_bybit_interval(interval)
+        symbol = await self.resolve_symbol(market=market, symbol=symbol)
         instruments = await self.list_instruments(market=market)
         instrument = next((item for item in instruments if item["symbol"] == symbol.upper()), None)
         if instrument is None:
             raise InvalidBybitSymbolError(f"Unknown Bybit {market} symbol: {symbol}")
         if instrument["status"] != "Trading":
             raise ValueError(f"Bybit instrument {symbol.upper()} is not Trading")
+
+    async def resolve_symbol(self, *, market: str, symbol: str) -> str:
+        normalized = symbol.upper()
+        instruments = await self.list_instruments(market=market)
+        for item in instruments:
+            if item["symbol"] == normalized:
+                return str(item["symbol"])
+        for item in instruments:
+            if str(item.get("display_name") or "").upper() == normalized:
+                return str(item["symbol"])
+        raise InvalidBybitSymbolError(f"Unknown Bybit {market} symbol: {symbol}")
 
     @classmethod
     def _market_to_category(cls, market: str) -> str:
@@ -236,6 +256,7 @@ class BybitAdapter(ProviderAdapter):
             "status": str(item.get("status", "")),
             "base_coin": item.get("baseCoin"),
             "quote_coin": item.get("quoteCoin"),
+            "display_name": str(item.get("displayName") or "").upper(),
         }
 
     @staticmethod

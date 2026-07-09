@@ -1,7 +1,8 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.exceptions import RequestValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ..exchanges.bybit import InvalidBybitSymbolError
 from ..db import get_db, SessionLocal
 from ..exchanges.registry import get_adapter, get_canonical_interval
 from ..schemas import KlineHistoryResponse, KlineBarResponse
@@ -101,6 +102,13 @@ async def get_klines(
     if not is_supported_interval(interval):
         return KlineHistoryResponse(bars=[], noData=True)
 
+    adapter = get_adapter(exchange=exchange, market=market)
+    if exchange == "bybit":
+        try:
+            symbol = await adapter.resolve_symbol(market=market, symbol=symbol)  # type: ignore[attr-defined]
+        except InvalidBybitSymbolError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+
     now_ms = __import__("time").time_ns() // 1_000_000
     current_open_ts = floor_to_interval_open(now_ms, interval)
     latest_closed_ts = latest_closed_open_time(now_ms=now_ms, interval=interval)
@@ -124,7 +132,6 @@ async def get_klines(
         return KlineHistoryResponse(bars=[], noData=True)
 
     should_backfill = True
-    adapter = get_adapter(exchange=exchange, market=market)
     preferred_history_interval = adapter.get_history_backfill_interval(interval)
 
     source_interval = await AggregationService.pick_best_source_interval(
@@ -156,15 +163,18 @@ async def get_klines(
     )
 
     if should_backfill and from_ts <= history_to_ts:
-        await backfill_service.ensure_range_loaded(
-            db=db,
-            exchange=exchange,
-            market=market,
-            symbol=symbol,
-            interval=source_interval,
-            from_ts=source_from,
-            to_ts=source_to,
-        )
+        try:
+            await backfill_service.ensure_range_loaded(
+                db=db,
+                exchange=exchange,
+                market=market,
+                symbol=symbol,
+                interval=source_interval,
+                from_ts=source_from,
+                to_ts=source_to,
+            )
+        except InvalidBybitSymbolError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     if source_interval == interval:
         bars = await AggregationService.get_bars_from_interval(

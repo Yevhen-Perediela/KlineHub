@@ -6,6 +6,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..config import settings
 from ..db import get_db
+from ..exchanges.bybit import InvalidBybitSymbolError
+from ..exchanges.registry import get_adapter
 from ..models import TrackedPair
 from ..schemas import (
     TrackedPairCreate,
@@ -44,6 +46,12 @@ async def create_pair(
     symbol = payload.symbol.upper()
     exchange = payload.exchange.lower()
     market = payload.market.lower()
+    if exchange == "bybit":
+        try:
+            adapter = get_adapter(exchange=exchange, market=market)
+            symbol = await adapter.resolve_symbol(market=market, symbol=symbol)  # type: ignore[attr-defined]
+        except InvalidBybitSymbolError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     await request.app.state.backfill_service.validate_pair(
         exchange=exchange,

@@ -99,8 +99,21 @@ class BackfillService:
             from_ts=normalized_from,
             to_ts=normalized_to,
         )
+        expected_source = self._expected_source(exchange=exchange, market=market)
+        needs_source_refresh = False
+        if expected_source is not None:
+            needs_source_refresh = await self._range_has_unexpected_source(
+                db=db,
+                exchange=exchange,
+                market=market,
+                symbol=symbol,
+                interval=interval,
+                from_ts=normalized_from,
+                to_ts=normalized_to,
+                expected_source=expected_source,
+            )
 
-        if not missing_ranges:
+        if not missing_ranges and not needs_source_refresh:
             logger.info(
                 "All candles already present in DB for %s %s %s %s [%s..%s]",
                 exchange,
@@ -111,6 +124,27 @@ class BackfillService:
                 normalized_to,
             )
             return 0
+
+        if needs_source_refresh:
+            logger.info(
+                "Refreshing %s %s %s %s [%s..%s] because stored candles are not %s",
+                exchange,
+                market,
+                symbol,
+                interval,
+                normalized_from,
+                normalized_to,
+                expected_source,
+            )
+            return await self._fetch_and_store_range(
+                db=db,
+                exchange=exchange,
+                market=market,
+                symbol=symbol,
+                interval=interval,
+                start_open_time=normalized_from,
+                end_open_time=normalized_to,
+            )
 
         logger.info(
             "Found %s missing ranges for %s %s %s %s",
@@ -460,6 +494,41 @@ class BackfillService:
             )
 
         return missing_ranges
+
+    @staticmethod
+    def _expected_source(*, exchange: str, market: str) -> str | None:
+        if exchange == "bybit" and market == "futures":
+            return "bybit_mark"
+        return None
+
+    @staticmethod
+    async def _range_has_unexpected_source(
+        *,
+        db: AsyncSession,
+        exchange: str,
+        market: str,
+        symbol: str,
+        interval: str,
+        from_ts: int,
+        to_ts: int,
+        expected_source: str,
+    ) -> bool:
+        stmt = (
+            select(Candle.open_time)
+            .where(
+                Candle.exchange == exchange,
+                Candle.market == market,
+                Candle.symbol == symbol,
+                Candle.interval == interval,
+                Candle.is_closed.is_(True),
+                Candle.open_time >= from_ts,
+                Candle.open_time <= to_ts,
+                Candle.source != expected_source,
+            )
+            .limit(1)
+        )
+        result = await db.execute(stmt)
+        return result.scalar_one_or_none() is not None
 
     async def _fetch_and_store_range(
         self,

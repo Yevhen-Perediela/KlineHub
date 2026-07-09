@@ -402,6 +402,9 @@ class StreamManager:
 
         message = adapter.parse_message(raw_message)
 
+        if exchange == "bybit" and market == "futures":
+            return
+
         if adapter.native_kline_stream:
             kline_event = adapter.extract_kline_event(message)
             if not kline_event:
