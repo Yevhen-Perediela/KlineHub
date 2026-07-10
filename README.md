@@ -86,6 +86,8 @@ The HTTP kline API accepts the following normalized intervals:
 - `1w`
 - `1M`
 
+Provider adapters may support only a subset of these intervals natively. In particular, Bybit does not expose native `3d` history in the current adapter; `3d` can only be served if suitable smaller local candles are already available for aggregation.
+
 ### 4.4 Provider-specific notes
 
 #### Binance
@@ -96,10 +98,13 @@ The HTTP kline API accepts the following normalized intervals:
 
 #### Bybit
 
-- Native exchange kline stream
+- Native exchange kline stream for `spot`
 - Direct backfill from Bybit REST API
 - Supports `spot` and `futures`
 - Uses separate public WebSocket endpoints per market internally
+- Validates and resolves symbols against Bybit `instruments-info`
+- Futures history uses Bybit mark-price klines; stored futures candles have `volume=0`
+- Bybit native history intervals are `1m`, `5m`, `15m`, `30m`, `1h`, `2h`, `4h`, `12h`, `1d`, `1w`, and `1M`
 
 #### OANDA
 
@@ -208,6 +213,7 @@ GET /api/klines
 - `exchange` is normalized to lowercase.
 - `market` is normalized to lowercase.
 - `symbol` is normalized to uppercase.
+- Bybit symbols are resolved against Bybit instruments before lookup; invalid Bybit symbols return `400`.
 - Unsupported intervals return an empty payload with `noData=true`.
 - If `to` is omitted, the API uses the current interval open time.
 - If `from` is omitted, the API calculates a backward window based on `limit`.
@@ -217,7 +223,9 @@ GET /api/klines
 
 #### Aggregation behavior
 
-- Binance and Bybit can provide direct native intervals for backfill.
+- Binance and Bybit can provide direct native intervals for backfill where the provider adapter supports the requested interval.
+- Bybit futures backfill reads mark-price candles from `/v5/market/mark-price-kline`.
+- Bybit spot backfill reads trade candles from `/v5/market/kline`.
 - OANDA stores canonical `1m` candles and higher intervals are aggregated from them.
 - If a smaller source interval already exists locally and can be aggregated to the target interval, KlineHub may serve aggregated data from stored candles.
 
@@ -450,7 +458,7 @@ Content-Type: application/json
 | --- | --- | --- | --- | --- |
 | `exchange` | string | Yes | - | `binance`, `bybit`, `oanda` |
 | `market` | string | Yes | - | Exchange market |
-| `symbol` | string | Yes | - | Instrument symbol |
+| `symbol` | string | Yes | - | Instrument symbol; Bybit accepts canonical symbol or matching `displayName` alias |
 | `interval` | string | No | `1h` | Tracked interval |
 | `source` | string | No | `api` | Source marker for bookkeeping |
 | `priority` | integer | No | `100` | Internal priority field |
@@ -593,6 +601,97 @@ DELETE /internal/pairs/{exchange}/{market}/{symbol}/{interval}
 curl -X DELETE http://127.0.0.1:8088/internal/pairs/bybit/futures/BTCUSDT/1h
 ```
 
+### 8.8 `POST /internal/refresh-popular-pairs`
+
+Refreshes tracked pairs from ranked crypto bases and curated OANDA instruments.
+
+For Bybit, the service fetches `spot` and `futures` instruments from Bybit `instruments-info`, filters active `Trading` instruments by quote coin, matches them to CoinMarketCap-ranked base assets, then adds, resumes, pauses, or deletes tracked pairs according to the selected mode.
+
+#### Request
+
+```http
+POST /internal/refresh-popular-pairs
+Content-Type: application/json
+```
+
+#### Body schema
+
+| Field | Type | Default | Description |
+| --- | --- | --- | --- |
+| `dry_run` | boolean | `false` | Preview changes without applying them |
+| `mode` | string | `pause` | What to do with stale tracked pairs: `pause` or `delete` |
+| `crypto_interval` | string | `1h` | Interval for Binance and Bybit tracked pairs |
+| `oanda_interval` | string | `1m` | OANDA tracked interval; must be `1m` |
+| `bybit.quotes` | array | `["USDT", "USDC"]` | Quote coins accepted for Bybit candidates |
+| `bybit.spot_base_limit` | integer | `100` | CoinMarketCap top-base limit for Bybit spot |
+| `bybit.futures_base_limit` | integer | `100` | CoinMarketCap top-base limit for Bybit futures |
+
+#### Request example: Bybit-focused dry run
+
+```bash
+curl -X POST http://127.0.0.1:8088/internal/refresh-popular-pairs \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "dry_run": true,
+    "mode": "pause",
+    "crypto_interval": "1h",
+    "bybit": {
+      "quotes": ["USDT", "USDC"],
+      "spot_base_limit": 50,
+      "futures_base_limit": 50
+    }
+  }'
+```
+
+#### Response example
+
+```json
+{
+  "ok": true,
+  "dry_run": true,
+  "mode": "pause",
+  "summary": {
+    "desired_total": 1,
+    "current_total": 0,
+    "to_add": 1,
+    "to_resume": 0,
+    "to_pause": 0,
+    "to_delete": 0,
+    "unchanged": 0,
+    "failed": 0,
+    "reload_triggered": false
+  },
+  "groups": {
+    "bybit_spot": {
+      "desired": 1,
+      "added": 1,
+      "resumed": 0,
+      "paused": 0,
+      "deleted": 0,
+      "unchanged": 0
+    }
+  },
+  "added": [
+    {
+      "exchange": "bybit",
+      "market": "spot",
+      "symbol": "BTCUSDT",
+      "interval": "1h",
+      "action": "add",
+      "reason": "cmc top base BTC rank=1",
+      "status": null,
+      "error": null,
+      "group": "bybit_spot"
+    }
+  ],
+  "resumed": [],
+  "paused": [],
+  "deleted": [],
+  "unchanged": [],
+  "failed_items": []
+}
+```
+
 ## 9. WebSocket API
 
 ### 9.1 `WS /ws/market`
@@ -632,7 +731,7 @@ After connect, the server immediately sends:
 {
   "action": "subscribe",
   "exchange": "bybit",
-  "market": "futures",
+  "market": "spot",
   "symbol": "BTCUSDT",
   "interval": "1h"
 }
@@ -644,7 +743,7 @@ After connect, the server immediately sends:
 {
   "action": "unsubscribe",
   "exchange": "bybit",
-  "market": "futures",
+  "market": "spot",
   "symbol": "BTCUSDT",
   "interval": "1h"
 }
@@ -655,7 +754,7 @@ After connect, the server immediately sends:
 ```json
 {
   "type": "subscribed",
-  "channel": "kline:bybit:futures:BTCUSDT:1h"
+  "channel": "kline:bybit:spot:BTCUSDT:1h"
 }
 ```
 
@@ -664,7 +763,7 @@ After connect, the server immediately sends:
 ```json
 {
   "type": "unsubscribed",
-  "channel": "kline:bybit:futures:BTCUSDT:1h"
+  "channel": "kline:bybit:spot:BTCUSDT:1h"
 }
 ```
 
@@ -706,8 +805,12 @@ wscat -c ws://127.0.0.1:8088/ws/market
 Then send:
 
 ```json
-{"action":"subscribe","exchange":"bybit","market":"futures","symbol":"BTCUSDT","interval":"1h"}
+{"action":"subscribe","exchange":"bybit","market":"spot","symbol":"BTCUSDT","interval":"1h"}
 ```
+
+#### Bybit realtime note
+
+Bybit `spot` publishes native kline events through this WebSocket path. Bybit `futures` history is currently stored from mark-price REST candles, and futures WebSocket kline messages are ignored by the stream manager to avoid mixing mark-price history with trade-price live candles.
 
 ## 10. Error Semantics
 
@@ -719,7 +822,8 @@ Typical outcomes:
 | --- | --- |
 | Validation error on query/body | `422 Unprocessable Entity` |
 | Missing tracked pair for pause/resume/delete | `404 Not Found` |
-| Invalid provider symbol or unsupported exchange/market | `400` or `500` depending on current exception path |
+| Invalid Bybit symbol on `/api/klines` or `POST /internal/pairs` | `400 Bad Request` |
+| Other invalid provider symbol or unsupported exchange/market | `400` or `500` depending on current exception path |
 
 Because some provider errors are raised directly from service code, production deployments should consider adding a consistent exception mapping layer if you want a fully stable external contract.
 
@@ -739,6 +843,7 @@ APP_ENV=production
 APP_NAME=market-data-worker
 APP_HOST=0.0.0.0
 APP_PORT=8000
+COINMARKETCAP_API_KEY=...
 ```
 
 ### 11.2 Bybit configuration
@@ -822,7 +927,10 @@ Important current implementation details:
 - Open candles are cached in Redis.
 - Stream workers are reloaded after pair create, resume, pause, and delete operations.
 - OANDA reconciliation runs periodically to correct recent candles.
-- Bybit and Binance stream native exchange kline events directly.
+- Binance streams native exchange kline events directly.
+- Bybit spot streams native exchange kline events directly.
+- Bybit futures history uses mark-price REST candles; futures WebSocket kline events are currently skipped.
+- Bybit instrument metadata is cached in memory for `BYBIT_INSTRUMENTS_CACHE_TTL_SEC`.
 
 ## 14. Changelog Guidance
 
