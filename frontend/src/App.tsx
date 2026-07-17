@@ -225,13 +225,8 @@ function statusPill(ok: boolean) {
 }
 
 async function fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
-  const dashboardPassword = window.sessionStorage.getItem(DASHBOARD_AUTH_KEY);
   const res = await fetch(`${API_BASE}${path}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...(dashboardPassword ? { "X-Dashboard-Password": dashboardPassword } : {}),
-      ...(init?.headers || {}),
-    },
+    headers: { "Content-Type": "application/json", ...(init?.headers || {}) },
     ...init,
   });
 

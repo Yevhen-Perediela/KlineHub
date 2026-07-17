@@ -1,8 +1,7 @@
 from contextlib import asynccontextmanager
-from hmac import compare_digest
 import logging
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from sqlalchemy.exc import TimeoutError as SQLAlchemyTimeoutError
 from sqlalchemy import text
@@ -29,8 +28,6 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
 )
-
-DASHBOARD_PASSWORD = "imklinehubadmin"
 
 backfill_service = BackfillService(session_factory=SessionLocal)
 realtime_service = RealtimeService()
@@ -96,19 +93,6 @@ app.state.realtime_service = realtime_service
 app.state.chart_ws_service = chart_ws_service
 app.state.popular_pairs_service = popular_pairs_service
 app.state.on_demand_tracking_service = on_demand_tracking_service
-
-
-@app.middleware("http")
-async def dashboard_password_middleware(request: Request, call_next):
-    if request.url.path.startswith("/internal"):
-        password = request.headers.get("x-dashboard-password", "")
-        if not compare_digest(password, DASHBOARD_PASSWORD):
-            return JSONResponse(
-                status_code=401,
-                content={"detail": "dashboard password required"},
-            )
-
-    return await call_next(request)
 
 
 @app.get("/")
