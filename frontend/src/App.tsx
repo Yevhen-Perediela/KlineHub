@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
+import type { FormEvent } from "react";
 import {
   Activity,
   AlertTriangle,
   CheckCircle2,
   Database,
+  LockKeyhole,
+  LogOut,
   PauseCircle,
   PlayCircle,
   Plus,
@@ -23,6 +26,8 @@ import {
 } from "lucide-react";
 
 const API_BASE = "";
+const DASHBOARD_PASSWORD = "imklinehubadmin";
+const DASHBOARD_AUTH_KEY = "klinehub_dashboard_auth";
 
 type InternalHealth = {
   status: string;
@@ -220,8 +225,13 @@ function statusPill(ok: boolean) {
 }
 
 async function fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
+  const dashboardPassword = window.sessionStorage.getItem(DASHBOARD_AUTH_KEY);
   const res = await fetch(`${API_BASE}${path}`, {
-    headers: { "Content-Type": "application/json", ...(init?.headers || {}) },
+    headers: {
+      "Content-Type": "application/json",
+      ...(dashboardPassword ? { "X-Dashboard-Password": dashboardPassword } : {}),
+      ...(init?.headers || {}),
+    },
     ...init,
   });
 
@@ -315,7 +325,68 @@ function HealthBadge({ label, ok }: { label: string; ok: boolean }) {
   );
 }
 
+function LoginGate({ onUnlock }: { onUnlock: () => void }) {
+  const [password, setPassword] = useState("");
+  const [loginError, setLoginError] = useState("");
+
+  const submitLogin = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (password === DASHBOARD_PASSWORD) {
+      window.sessionStorage.setItem(DASHBOARD_AUTH_KEY, password);
+      setLoginError("");
+      onUnlock();
+      return;
+    }
+
+    setLoginError("Wrong password");
+    setPassword("");
+  };
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-black p-4 text-slate-100">
+      <form
+        onSubmit={submitLogin}
+        className="w-full max-w-sm rounded-lg border border-white/10 bg-zinc-950 p-6 shadow-2xl shadow-black/40"
+      >
+        <div className="mb-6 flex items-center gap-3">
+          <div className="rounded-lg border border-cyan-400/20 bg-cyan-500/10 p-3">
+            <LockKeyhole className="h-5 w-5 text-cyan-200" />
+          </div>
+          <div>
+            <div className="text-sm font-semibold uppercase tracking-[0.18em] text-cyan-200">KlineHub</div>
+            <h1 className="mt-1 text-xl font-semibold text-white">Dashboard access</h1>
+          </div>
+        </div>
+
+        <label className="block text-sm text-slate-300">
+          Password
+          <input
+            autoFocus
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            type="password"
+            className="mt-2 w-full rounded-lg border border-white/10 bg-black px-4 py-3 text-white outline-none placeholder:text-slate-600 focus:border-cyan-400/40"
+            placeholder="Enter password"
+          />
+        </label>
+
+        {loginError ? <div className="mt-3 text-sm text-rose-300">{loginError}</div> : null}
+
+        <button
+          type="submit"
+          className="mt-5 w-full rounded-lg bg-cyan-400 px-4 py-3 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300"
+        >
+          Enter dashboard
+        </button>
+      </form>
+    </div>
+  );
+}
+
 export default function KlineHubMonitorDashboard() {
+  const [authenticated, setAuthenticated] = useState(
+    () => window.sessionStorage.getItem(DASHBOARD_AUTH_KEY) === DASHBOARD_PASSWORD
+  );
   const [health, setHealth] = useState<InternalHealth | null>(null);
   const [stats, setStats] = useState<InternalStats | null>(null);
   const [ops, setOps] = useState<OperationalOps | null>(null);
@@ -351,10 +422,21 @@ export default function KlineHubMonitorDashboard() {
   };
 
   useEffect(() => {
+    if (!authenticated) return;
+
     loadAll();
     const id = window.setInterval(loadAll, 10000);
     return () => window.clearInterval(id);
-  }, []);
+  }, [authenticated]);
+
+  const logout = () => {
+    window.sessionStorage.removeItem(DASHBOARD_AUTH_KEY);
+    setAuthenticated(false);
+    setHealth(null);
+    setStats(null);
+    setOps(null);
+    setPairs([]);
+  };
 
   const filteredPairs = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -488,6 +570,10 @@ export default function KlineHubMonitorDashboard() {
     }
   };
 
+  if (!authenticated) {
+    return <LoginGate onUnlock={() => setAuthenticated(true)} />;
+  }
+
   return (
     <div className="min-h-screen bg-black text-slate-100">
       <div className="relative mx-auto max-w-7xl p-4 md:p-6 lg:p-8">
@@ -505,14 +591,23 @@ export default function KlineHubMonitorDashboard() {
             </p>
           </div>
 
-          <button
-            onClick={loadAll}
-            disabled={loading || mutating}
-            className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/8 px-4 py-2.5 text-sm font-medium text-white backdrop-blur transition hover:bg-white/15 disabled:opacity-50"
-          >
-            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-            Refresh
-          </button>
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={loadAll}
+              disabled={loading || mutating}
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/8 px-4 py-2.5 text-sm font-medium text-white backdrop-blur transition hover:bg-white/15 disabled:opacity-50"
+            >
+              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+              Refresh
+            </button>
+            <button
+              onClick={logout}
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/8 px-4 py-2.5 text-sm font-medium text-white backdrop-blur transition hover:bg-white/15"
+            >
+              <LogOut className="h-4 w-4" />
+              Logout
+            </button>
+          </div>
         </div>
 
         {error ? (

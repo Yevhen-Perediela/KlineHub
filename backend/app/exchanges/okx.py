@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import asyncio
+import copy
 import json
+import logging
 import time
 from typing import Any
 
@@ -16,8 +19,13 @@ class InvalidOkxSymbolError(ValueError):
     pass
 
 
+class OkxRateLimitError(ValueError):
+    pass
+
+
 class OkxAdapter(ProviderAdapter):
     provider_id = "okx"
+    logger = logging.getLogger(__name__)
 
     INTERVAL_MAP = {
         "1m": "1m",
@@ -40,6 +48,11 @@ class OkxAdapter(ProviderAdapter):
     }
 
     _instrument_cache: dict[str, tuple[float, list[dict[str, Any]]]] = {}
+    _rest_lock: asyncio.Lock | None = None
+    _cache_lock: asyncio.Lock | None = None
+    _last_rest_request_at: float = 0.0
+    _response_cache: dict[tuple[str, tuple[tuple[str, Any], ...]], tuple[float, dict[str, Any]]] = {}
+    _inflight_requests: dict[tuple[str, tuple[tuple[str, Any], ...]], asyncio.Task[dict[str, Any]]] = {}
 
     def build_stream_name(self, *, symbol: str, interval: str) -> str:
         channel = f"candle{self._to_okx_interval(interval)}"
@@ -121,18 +134,12 @@ class OkxAdapter(ProviderAdapter):
                 if start_time is not None:
                     params["before"] = max(0, int(start_time) - 1)
 
-                try:
-                    response = await client.get(
-                        f"{settings.okx_rest_url}/api/v5/market/{endpoint}",
-                        params=params,
-                    )
-                    record_http_response(exchange="okx", response=response)
-                except Exception as exc:
-                    record_http_error(exchange="okx", error=exc)
-                    raise
-                response.raise_for_status()
-                payload = response.json()
-                self._raise_on_error(payload=payload, symbol=inst_id)
+                payload = await self._get_json(
+                    path=f"/api/v5/market/{endpoint}",
+                    params=params,
+                    cache_ttl_sec=settings.okx_klines_cache_ttl_sec,
+                    symbol=inst_id,
+                )
                 page = payload.get("data") or []
                 if not isinstance(page, list) or not page:
                     break
@@ -182,20 +189,11 @@ class OkxAdapter(ProviderAdapter):
             if (now - cached_at) < settings.okx_instruments_cache_ttl_sec:
                 return items
 
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            try:
-                response = await client.get(
-                    f"{settings.okx_rest_url}/api/v5/public/instruments",
-                    params={"instType": inst_type},
-                )
-                record_http_response(exchange="okx", response=response)
-            except Exception as exc:
-                record_http_error(exchange="okx", error=exc)
-                raise
-
-        response.raise_for_status()
-        payload = response.json()
-        self._raise_on_error(payload=payload)
+        payload = await self._get_json(
+            path="/api/v5/public/instruments",
+            params={"instType": inst_type},
+            cache_ttl_sec=settings.okx_instruments_cache_ttl_sec,
+        )
         rows = payload.get("data") or []
         if not isinstance(rows, list):
             return []
@@ -331,6 +329,8 @@ class OkxAdapter(ProviderAdapter):
         if code in ("0", 0, None):
             return
         msg = str(payload.get("msg", "OKX request failed"))
+        if str(code) == "50011" or "rate limit" in msg.lower() or "too many requests" in msg.lower():
+            raise OkxRateLimitError(f"OKX rate limited: {msg}")
         normalized_msg = msg.lower()
         if symbol and ("instrument" in normalized_msg or "instid" in normalized_msg or "symbol" in normalized_msg):
             raise InvalidOkxSymbolError(f"Invalid OKX symbol: {symbol}")
@@ -339,3 +339,108 @@ class OkxAdapter(ProviderAdapter):
     @staticmethod
     def _now_ms() -> int:
         return int(time.time() * 1000)
+
+    @classmethod
+    def _get_rest_lock(cls) -> asyncio.Lock:
+        if cls._rest_lock is None:
+            cls._rest_lock = asyncio.Lock()
+        return cls._rest_lock
+
+    @classmethod
+    def _get_cache_lock(cls) -> asyncio.Lock:
+        if cls._cache_lock is None:
+            cls._cache_lock = asyncio.Lock()
+        return cls._cache_lock
+
+    @staticmethod
+    def _cache_key(path: str, params: dict[str, Any]) -> tuple[str, tuple[tuple[str, Any], ...]]:
+        normalized: dict[str, Any] = dict(params)
+        if path.endswith("/candles") and normalized.get("after") is not None:
+            try:
+                bucket_ms = max(1, int(settings.okx_klines_cache_ttl_sec)) * 1000
+                normalized["after"] = (int(normalized["after"]) // bucket_ms) * bucket_ms
+            except (TypeError, ValueError):
+                pass
+        return path, tuple(sorted((str(key), value) for key, value in normalized.items()))
+
+    async def _get_json(
+        self,
+        *,
+        path: str,
+        params: dict[str, Any],
+        cache_ttl_sec: float,
+        symbol: str | None = None,
+    ) -> dict[str, Any]:
+        key = self._cache_key(path, params)
+        now = time.monotonic()
+        async with self._get_cache_lock():
+            cached = self._response_cache.get(key)
+            if cached is not None:
+                cached_at, payload = cached
+                if now - cached_at <= cache_ttl_sec:
+                    return copy.deepcopy(payload)
+
+            task = self._inflight_requests.get(key)
+            if task is None or task.done():
+                task = asyncio.create_task(
+                    self._fetch_json_uncached(path=path, params=params, symbol=symbol)
+                )
+                self._inflight_requests[key] = task
+
+        try:
+            payload = await task
+        finally:
+            async with self._get_cache_lock():
+                if self._inflight_requests.get(key) is task and task.done():
+                    self._inflight_requests.pop(key, None)
+
+        async with self._get_cache_lock():
+            self._response_cache[key] = (time.monotonic(), copy.deepcopy(payload))
+        return copy.deepcopy(payload)
+
+    async def _fetch_json_uncached(
+        self,
+        *,
+        path: str,
+        params: dict[str, Any],
+        symbol: str | None,
+    ) -> dict[str, Any]:
+        retries = max(0, settings.okx_rest_max_retries)
+        for attempt in range(retries + 1):
+            await self._throttle_rest_request()
+            try:
+                async with httpx.AsyncClient(timeout=30.0) as client:
+                    response = await client.get(
+                        f"{settings.okx_rest_url}{path}",
+                        params=params,
+                    )
+                record_http_response(exchange="okx", response=response)
+
+                if response.status_code == 429:
+                    raise OkxRateLimitError("OKX HTTP 429 rate limit")
+
+                response.raise_for_status()
+                payload = response.json()
+                self._raise_on_error(payload=payload, symbol=symbol)
+                return payload
+            except OkxRateLimitError as exc:
+                record_http_error(exchange="okx", error=exc)
+                if attempt >= retries:
+                    raise
+                delay = settings.okx_rest_retry_after_sec * (attempt + 1)
+                self.logger.warning("OKX rate limited, retrying in %.2fs", delay)
+                await asyncio.sleep(delay)
+            except Exception as exc:
+                record_http_error(exchange="okx", error=exc)
+                raise
+
+        raise OkxRateLimitError("OKX rate limit retries exhausted")
+
+    async def _throttle_rest_request(self) -> None:
+        async with self._get_rest_lock():
+            min_interval = max(0, settings.okx_rest_min_interval_ms) / 1000
+            now = time.monotonic()
+            wait_for = min_interval - (now - self._last_rest_request_at)
+            if wait_for > 0:
+                await asyncio.sleep(wait_for)
+            self.__class__._last_rest_request_at = time.monotonic()

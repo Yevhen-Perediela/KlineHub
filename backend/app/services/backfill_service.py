@@ -126,6 +126,8 @@ class BackfillService:
             )
             return 0
 
+        await db.rollback()
+
         if needs_source_refresh:
             logger.info(
                 "Refreshing %s %s %s %s [%s..%s] because stored candles are not %s",
@@ -138,7 +140,6 @@ class BackfillService:
                 expected_source,
             )
             return await self._fetch_and_store_range(
-                db=db,
                 exchange=exchange,
                 market=market,
                 symbol=symbol,
@@ -160,7 +161,6 @@ class BackfillService:
 
         for rng in missing_ranges:
             fetched = await self._fetch_and_store_range(
-                db=db,
                 exchange=exchange,
                 market=market,
                 symbol=symbol,
@@ -307,16 +307,14 @@ class BackfillService:
             missing_end,
         )
 
-        async with self.session_factory() as session:
-            return await self._fetch_and_store_range(
-                db=session,
-                exchange=exchange,
-                market=market,
-                symbol=symbol,
-                interval=canonical_interval,
-                start_open_time=missing_start,
-                end_open_time=missing_end,
-            )
+        return await self._fetch_and_store_range(
+            exchange=exchange,
+            market=market,
+            symbol=symbol,
+            interval=canonical_interval,
+            start_open_time=missing_start,
+            end_open_time=missing_end,
+        )
 
     async def reconcile_recent_pair(
         self,
@@ -534,7 +532,6 @@ class BackfillService:
     async def _fetch_and_store_range(
         self,
         *,
-        db: AsyncSession,
         exchange: str,
         market: str,
         symbol: str,
@@ -600,15 +597,15 @@ class BackfillService:
                 )
                 break
 
-            await CandleService.upsert_closed_candles(
-                db=db,
-                exchange=exchange,
-                market=market,
-                symbol=symbol,
-                interval=interval,
-                events=events,
-            )
-            await db.commit()
+            async with self.session_factory() as session:
+                await CandleService.upsert_closed_candles(
+                    db=session,
+                    exchange=exchange,
+                    market=market,
+                    symbol=symbol,
+                    interval=interval,
+                    events=events,
+                )
 
             await CandleService.write_many_closed_candles_to_redis(
                 exchange=exchange,

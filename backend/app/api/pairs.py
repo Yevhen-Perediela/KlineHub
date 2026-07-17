@@ -9,7 +9,7 @@ from ..db import get_db
 from ..exchanges.bybit import InvalidBybitSymbolError
 from ..exchanges.binance_spot import InvalidSpotSymbolError
 from ..exchanges.oanda import InvalidOandaInstrumentError
-from ..exchanges.okx import InvalidOkxSymbolError
+from ..exchanges.okx import InvalidOkxSymbolError, OkxRateLimitError
 from ..exchanges.registry import get_adapter
 from ..models import TrackedPair
 from ..schemas import (
@@ -53,6 +53,8 @@ async def create_pair(
         try:
             adapter = get_adapter(exchange=exchange, market=market)
             symbol = await adapter.resolve_symbol(market=market, symbol=symbol)  # type: ignore[attr-defined]
+        except OkxRateLimitError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
         except (InvalidBybitSymbolError, InvalidOkxSymbolError, ValueError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -63,6 +65,8 @@ async def create_pair(
             symbol=symbol,
             interval=payload.interval,
         )
+    except OkxRateLimitError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
     except (InvalidSpotSymbolError, InvalidBybitSymbolError, InvalidOandaInstrumentError, InvalidOkxSymbolError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -86,13 +90,16 @@ async def create_pair(
         await db.commit()
         await db.refresh(existing)
 
-        await request.app.state.backfill_service.backfill_recent_pair(
-            exchange=exchange,
-            market=market,
-            symbol=symbol,
-            interval=payload.interval,
-            limit=payload.backfill_limit or settings.default_backfill_limit,
-        )
+        try:
+            await request.app.state.backfill_service.backfill_recent_pair(
+                exchange=exchange,
+                market=market,
+                symbol=symbol,
+                interval=payload.interval,
+                limit=payload.backfill_limit or settings.default_backfill_limit,
+            )
+        except OkxRateLimitError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
         await request.app.state.stream_manager.reload()
         return TrackedPairResponse.model_validate(existing)
 
@@ -111,13 +118,16 @@ async def create_pair(
     await db.commit()
     await db.refresh(item)
 
-    await request.app.state.backfill_service.backfill_recent_pair(
-        exchange=exchange,
-        market=market,
-        symbol=symbol,
-        interval=payload.interval,
-        limit=payload.backfill_limit or settings.default_backfill_limit,
-    )
+    try:
+        await request.app.state.backfill_service.backfill_recent_pair(
+            exchange=exchange,
+            market=market,
+            symbol=symbol,
+            interval=payload.interval,
+            limit=payload.backfill_limit or settings.default_backfill_limit,
+        )
+    except OkxRateLimitError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
     await request.app.state.stream_manager.reload()
 
     return TrackedPairResponse.model_validate(item)

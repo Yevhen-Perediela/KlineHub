@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..exchanges.binance_spot import InvalidSpotSymbolError
 from ..exchanges.bybit import InvalidBybitSymbolError
 from ..exchanges.oanda import InvalidOandaInstrumentError
-from ..exchanges.okx import InvalidOkxSymbolError
+from ..exchanges.okx import InvalidOkxSymbolError, OkxRateLimitError
 from ..db import get_db, SessionLocal
 from ..exchanges.registry import get_adapter, get_canonical_interval
 from ..schemas import KlineHistoryResponse, KlineBarResponse
@@ -114,6 +114,8 @@ async def get_klines(
     if exchange in {"bybit", "okx"}:
         try:
             symbol = await adapter.resolve_symbol(market=market, symbol=symbol)  # type: ignore[attr-defined]
+        except OkxRateLimitError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
         except (InvalidBybitSymbolError, InvalidOkxSymbolError, ValueError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -150,6 +152,7 @@ async def get_klines(
             symbol=symbol,
             target_interval=interval,
         )
+        await db.rollback()
     except SQLAlchemyTimeoutError as exc:
         raise HTTPException(status_code=503, detail="database connection pool exhausted") from exc
 
@@ -178,6 +181,8 @@ async def get_klines(
             symbol=symbol,
             interval=tracking_interval,
         )
+    except OkxRateLimitError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
     except (InvalidSpotSymbolError, InvalidBybitSymbolError, InvalidOandaInstrumentError, InvalidOkxSymbolError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -206,6 +211,8 @@ async def get_klines(
                 from_ts=source_from,
                 to_ts=source_to,
             )
+        except OkxRateLimitError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
         except (InvalidBybitSymbolError, InvalidOkxSymbolError, ValueError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
@@ -234,15 +241,18 @@ async def get_klines(
         )
 
     if to_ts >= current_open_ts:
-        open_bar = await OpenCandleService.get_open_bar(
-            db=db,
-            exchange=exchange,
-            market=market,
-            symbol=symbol,
-            interval=interval,
-            current_open_ts=current_open_ts,
-            now_ms=now_ms,
-        )
+        try:
+            open_bar = await OpenCandleService.get_open_bar(
+                db=db,
+                exchange=exchange,
+                market=market,
+                symbol=symbol,
+                interval=interval,
+                current_open_ts=current_open_ts,
+                now_ms=now_ms,
+            )
+        except OkxRateLimitError:
+            open_bar = None
         if open_bar is not None and from_ts <= open_bar["time"] <= to_ts:
             bars = [bar for bar in bars if bar["time"] != open_bar["time"]]
             bars.append(open_bar)

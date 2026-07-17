@@ -35,6 +35,10 @@ class Settings(BaseSettings):
     okx_rest_url: str = "https://openapi.okx.com"
     okx_ws_business_url: str = "wss://ws.okx.com:8443/ws/v5/business"
     okx_instruments_cache_ttl_sec: int = 900
+    okx_rest_min_interval_ms: int = 250
+    okx_rest_max_retries: int = 3
+    okx_rest_retry_after_sec: float = 1.0
+    okx_klines_cache_ttl_sec: int = 5
     oanda_rest_url: str = "https://api-fxtrade.oanda.com"
     oanda_stream_url: str = "https://stream-fxtrade.oanda.com"
     oanda_api_token: str | None = None
