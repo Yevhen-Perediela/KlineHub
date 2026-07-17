@@ -12,6 +12,7 @@ from ..config import settings
 from ..exchanges.binance_spot import InvalidSpotSymbolError
 from ..exchanges.bybit import InvalidBybitSymbolError
 from ..exchanges.oanda import InvalidOandaInstrumentError
+from ..exchanges.okx import InvalidOkxSymbolError
 from ..exchanges.registry import get_adapter, get_canonical_interval
 from ..models import Candle, TrackedPair
 from ..services.candle_service import CandleService
@@ -207,7 +208,7 @@ class BackfillService:
                 interval=canonical_interval,
                 limit=limit,
             )
-        except (InvalidSpotSymbolError, InvalidBybitSymbolError, InvalidOandaInstrumentError):
+        except (InvalidSpotSymbolError, InvalidBybitSymbolError, InvalidOandaInstrumentError, InvalidOkxSymbolError):
             logger.warning(
                 "Invalid instrument in recent backfill: %s %s %s %s",
                 exchange,
@@ -390,7 +391,7 @@ class BackfillService:
                     )
                     repaired_values.append(repaired)
 
-                except (InvalidSpotSymbolError, InvalidBybitSymbolError, InvalidOandaInstrumentError):
+                except (InvalidSpotSymbolError, InvalidBybitSymbolError, InvalidOandaInstrumentError, InvalidOkxSymbolError):
                     logger.warning(
                         "Pair %s %s %s %s is invalid. Pausing it.",
                         pair.exchange,
@@ -579,7 +580,7 @@ class BackfillService:
                     end_time=next_interval_open(chunk_end, interval) - 1,
                     limit=limit,
                 )
-            except (InvalidSpotSymbolError, InvalidBybitSymbolError, InvalidOandaInstrumentError):
+            except (InvalidSpotSymbolError, InvalidBybitSymbolError, InvalidOandaInstrumentError, InvalidOkxSymbolError):
                 logger.warning(
                     "Invalid instrument while fetching range: %s %s %s %s",
                     exchange,

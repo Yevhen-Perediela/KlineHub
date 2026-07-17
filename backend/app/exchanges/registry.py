@@ -5,12 +5,14 @@ from .binance_futures import BinanceFuturesAdapter
 from .binance_spot import BinanceSpotAdapter
 from .bybit import BybitAdapter
 from .oanda import OandaAdapter
+from .okx import OkxAdapter
 
 
 _BINANCE_SPOT = BinanceSpotAdapter()
 _BINANCE_FUTURES = BinanceFuturesAdapter()
 _BYBIT = BybitAdapter()
 _OANDA = OandaAdapter()
+_OKX = OkxAdapter()
 
 
 def get_adapter(*, exchange: str, market: str) -> ProviderAdapter:
@@ -23,6 +25,8 @@ def get_adapter(*, exchange: str, market: str) -> ProviderAdapter:
         return _BINANCE_FUTURES
     if exchange == "bybit" and market in {"spot", "futures"}:
         return _BYBIT
+    if exchange == "okx" and market in {"spot", "futures"}:
+        return _OKX
     if exchange == "oanda" and market in {"forex", "metals", "stocks"}:
         return _OANDA
 

@@ -183,6 +183,20 @@ class PopularPairsService:
                 base_limit=payload.bybit.futures_base_limit,
                 interval=crypto_interval,
             ),
+            self._build_ranked_crypto_pairs(
+                exchange="okx",
+                market="spot",
+                quotes=payload.okx.quotes,
+                base_limit=payload.okx.spot_base_limit,
+                interval=crypto_interval,
+            ),
+            self._build_ranked_crypto_pairs(
+                exchange="okx",
+                market="futures",
+                quotes=payload.okx.quotes,
+                base_limit=payload.okx.futures_base_limit,
+                interval=crypto_interval,
+            ),
             self._build_oanda_pairs(
                 market="forex",
                 symbols=payload.oanda.forex_symbols if payload.oanda.enable_forex else [],
@@ -364,6 +378,22 @@ class PopularPairsService:
                 and str(item.get("quote_coin", "")).upper() in quotes
             ]
 
+        if exchange == "okx":
+            adapter = get_adapter(exchange="okx", market=market)
+            instruments = await adapter.list_instruments(market=market)
+            return [
+                PairCandidate(
+                    symbol=str(item["symbol"]).upper(),
+                    base=str(item["base_coin"]).upper(),
+                    quote=str(item["quote_coin"]).upper(),
+                )
+                for item in instruments
+                if item.get("status") == "live"
+                and item.get("base_coin")
+                and item.get("quote_coin")
+                and str(item.get("quote_coin", "")).upper() in quotes
+            ]
+
         raise ValueError(f"Unsupported crypto provider: {exchange}")
 
     async def _fetch_coinmarketcap_top_bases(self) -> list[str]:
@@ -425,6 +455,8 @@ class PopularPairsService:
         desired_keys = set(desired_pairs)
         for key, current in current_by_key.items():
             if key in desired_keys:
+                continue
+            if current.source == "on_demand":
                 continue
 
             stale_item = DesiredPair(
@@ -501,6 +533,13 @@ class PopularPairsService:
                 row.status = previous_status
                 row.updated_at = previous_updated_at
                 failures.append(self._failure_item(item=item, action="resume", error=exc))
+
+        for item in diff.unchanged:
+            row = current_by_key.get(item.key)
+            if row is not None and row.source == "on_demand":
+                row.source = "popular_refresh"
+                row.auto_stop_at = None
+                row.updated_at = datetime.utcnow()
 
         for item in diff.to_pause:
             try:

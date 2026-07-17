@@ -1,8 +1,11 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.exceptions import RequestValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ..exchanges.binance_spot import InvalidSpotSymbolError
 from ..exchanges.bybit import InvalidBybitSymbolError
+from ..exchanges.oanda import InvalidOandaInstrumentError
+from ..exchanges.okx import InvalidOkxSymbolError
 from ..db import get_db, SessionLocal
 from ..exchanges.registry import get_adapter, get_canonical_interval
 from ..schemas import KlineHistoryResponse, KlineBarResponse
@@ -83,6 +86,7 @@ def _parse_int_query(
 
 @router.get("/klines", response_model=KlineHistoryResponse)
 async def get_klines(
+    request: Request,
     exchange: str = Query(...),
     market: str = Query(...),
     symbol: str = Query(...),
@@ -103,10 +107,10 @@ async def get_klines(
         return KlineHistoryResponse(bars=[], noData=True)
 
     adapter = get_adapter(exchange=exchange, market=market)
-    if exchange == "bybit":
+    if exchange in {"bybit", "okx"}:
         try:
             symbol = await adapter.resolve_symbol(market=market, symbol=symbol)  # type: ignore[attr-defined]
-        except InvalidBybitSymbolError as exc:
+        except (InvalidBybitSymbolError, InvalidOkxSymbolError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     now_ms = __import__("time").time_ns() // 1_000_000
@@ -155,6 +159,28 @@ async def get_klines(
             requested_interval=interval,
         )
 
+    tracking_interval = get_canonical_interval(
+        exchange=exchange,
+        market=market,
+        requested_interval=interval,
+    )
+    try:
+        await request.app.state.backfill_service.validate_pair(
+            exchange=exchange,
+            market=market,
+            symbol=symbol,
+            interval=tracking_interval,
+        )
+    except (InvalidSpotSymbolError, InvalidBybitSymbolError, InvalidOandaInstrumentError, InvalidOkxSymbolError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    await request.app.state.on_demand_tracking_service.ensure_pair_tracked(
+        exchange=exchange,
+        market=market,
+        symbol=symbol,
+        interval=tracking_interval,
+    )
+
     source_from = floor_to_interval_open(from_ts, source_interval)
     history_to_ts = min(to_ts, latest_closed_ts)
     source_to = floor_to_interval_open(
@@ -173,7 +199,7 @@ async def get_klines(
                 from_ts=source_from,
                 to_ts=source_to,
             )
-        except InvalidBybitSymbolError as exc:
+        except (InvalidBybitSymbolError, InvalidOkxSymbolError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     if source_interval == interval:

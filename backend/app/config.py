@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     bybit_rest_url: str = "https://api.bybit.com"
     bybit_ws_url: str = "wss://stream.bybit.com"
     bybit_instruments_cache_ttl_sec: int = 900
+    okx_rest_url: str = "https://openapi.okx.com"
+    okx_ws_business_url: str = "wss://ws.okx.com:8443/ws/v5/business"
+    okx_instruments_cache_ttl_sec: int = 900
     oanda_rest_url: str = "https://api-fxtrade.oanda.com"
     oanda_stream_url: str = "https://stream-fxtrade.oanda.com"
     oanda_api_token: str | None = None
@@ -34,6 +37,8 @@ class Settings(BaseSettings):
     oanda_reconcile_interval_sec: int = 20
     default_backfill_limit: int = 300
     max_backfill_limit: int = 1000
+    on_demand_tracking_ttl_days: int = 2
+    on_demand_tracking_cleanup_interval_sec: int = 300
 
     model_config = SettingsConfigDict(
         env_file=".env",

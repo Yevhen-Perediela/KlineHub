@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..config import settings
 from ..db import get_db
 from ..exchanges.bybit import InvalidBybitSymbolError
+from ..exchanges.okx import InvalidOkxSymbolError
 from ..exchanges.registry import get_adapter
 from ..models import TrackedPair
 from ..schemas import (
@@ -46,11 +47,11 @@ async def create_pair(
     symbol = payload.symbol.upper()
     exchange = payload.exchange.lower()
     market = payload.market.lower()
-    if exchange == "bybit":
+    if exchange in {"bybit", "okx"}:
         try:
             adapter = get_adapter(exchange=exchange, market=market)
             symbol = await adapter.resolve_symbol(market=market, symbol=symbol)  # type: ignore[attr-defined]
-        except InvalidBybitSymbolError as exc:
+        except (InvalidBybitSymbolError, InvalidOkxSymbolError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     await request.app.state.backfill_service.validate_pair(
@@ -71,11 +72,14 @@ async def create_pair(
     existing = existing_q.scalar_one_or_none()
 
     if existing:
+        existing.source = payload.source
+        existing.priority = payload.priority
+        existing.auto_stop_at = None
         if existing.status != "active":
             existing.status = "active"
-            existing.updated_at = datetime.utcnow()
-            await db.commit()
-            await db.refresh(existing)
+        existing.updated_at = datetime.utcnow()
+        await db.commit()
+        await db.refresh(existing)
 
         await request.app.state.backfill_service.backfill_recent_pair(
             exchange=exchange,
@@ -95,6 +99,7 @@ async def create_pair(
         status="active",
         source=payload.source,
         priority=payload.priority,
+        auto_stop_at=None,
     )
 
     db.add(item)
@@ -173,6 +178,7 @@ async def pause_pair(
         raise HTTPException(status_code=404, detail="Tracked pair not found")
 
     item.status = "paused"
+    item.auto_stop_at = None
     item.updated_at = datetime.utcnow()
     await db.commit()
     await db.refresh(item)
@@ -207,6 +213,8 @@ async def resume_pair(
         raise HTTPException(status_code=404, detail="Tracked pair not found")
 
     item.status = "active"
+    item.source = "api" if item.source == "on_demand" else item.source
+    item.auto_stop_at = None
     item.updated_at = datetime.utcnow()
     await db.commit()
     await db.refresh(item)

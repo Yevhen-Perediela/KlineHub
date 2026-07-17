@@ -38,6 +38,7 @@ class TrackedPair(Base):
     status: Mapped[str] = mapped_column(String(16), nullable=False, default="active", index=True)
     source: Mapped[str] = mapped_column(String(32), nullable=False, default="api")
     priority: Mapped[int] = mapped_column(Integer, nullable=False, default=100)
+    auto_stop_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=False), nullable=True, index=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=False), nullable=False, default=datetime.utcnow)
     updated_at: Mapped[datetime] = mapped_column(

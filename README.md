@@ -59,6 +59,7 @@ ws://<host>:8088
 | --- | --- |
 | `binance` | `spot`, `futures` |
 | `bybit` | `spot`, `futures` |
+| `okx` | `spot`, `futures` |
 | `oanda` | `forex`, `metals`, `stocks` |
 
 ### 4.2 Symbol format
@@ -67,6 +68,7 @@ ws://<host>:8088
 | --- | --- |
 | Binance | `BTCUSDT`, `ETHUSDT` |
 | Bybit | `BTCUSDT`, `ETHUSDT` |
+| OKX | `BTC-USDT`, `BTC-USDT-SWAP` |
 | OANDA | `EUR_USD`, `XAU_USD`, `SPX500_USD` |
 
 ### 4.3 Supported query intervals
@@ -105,6 +107,15 @@ Provider adapters may support only a subset of these intervals natively. In part
 - Validates and resolves symbols against Bybit `instruments-info`
 - Futures history uses Bybit mark-price klines; stored futures candles have `volume=0`
 - Bybit native history intervals are `1m`, `5m`, `15m`, `30m`, `1h`, `2h`, `4h`, `12h`, `1d`, `1w`, and `1M`
+
+#### OKX
+
+- Native exchange kline stream for `spot` and `futures`
+- Direct backfill from OKX REST API
+- Supports `spot` and perpetual swap futures (`market=futures`)
+- Uses OKX native instrument IDs internally, for example `BTC-USDT` and `BTC-USDT-SWAP`
+- Accepts compact aliases such as `BTCUSDT` on pair creation and kline requests when they resolve unambiguously
+- Uses UTC OKX daily, weekly, and monthly candle intervals to match KlineHub UTC aggregation boundaries
 
 #### OANDA
 
@@ -200,7 +211,7 @@ GET /api/klines
 
 | Name | Type | Required | Description |
 | --- | --- | --- | --- |
-| `exchange` | string | Yes | Exchange identifier: `binance`, `bybit`, `oanda` |
+| `exchange` | string | Yes | Exchange identifier: `binance`, `bybit`, `okx`, `oanda` |
 | `market` | string | Yes | Market identifier for the exchange |
 | `symbol` | string | Yes | Instrument symbol |
 | `interval` | string | Yes | Requested normalized interval |
@@ -213,19 +224,23 @@ GET /api/klines
 - `exchange` is normalized to lowercase.
 - `market` is normalized to lowercase.
 - `symbol` is normalized to uppercase.
-- Bybit symbols are resolved against Bybit instruments before lookup; invalid Bybit symbols return `400`.
+- Bybit and OKX symbols are resolved against provider instruments before lookup; invalid symbols return `400`.
 - Unsupported intervals return an empty payload with `noData=true`.
 - If `to` is omitted, the API uses the current interval open time.
 - If `from` is omitted, the API calculates a backward window based on `limit`.
 - Closed historical candles are served from PostgreSQL.
 - Missing historical ranges are backfilled from the provider and stored.
+- If the requested pair is not actively tracked, KlineHub creates or resumes an `on_demand` tracked pair for a limited time.
+- On-demand tracking is extended on repeated requests and is paused automatically after `ON_DEMAND_TRACKING_TTL_DAYS`.
+- Auto-pausing an on-demand pair stops live streaming only; stored candles remain in PostgreSQL and Redis.
 - If an open candle exists in Redis for the requested interval, it is appended or replaces the same timestamp in the response.
 
 #### Aggregation behavior
 
-- Binance and Bybit can provide direct native intervals for backfill where the provider adapter supports the requested interval.
+- Binance, Bybit, and OKX can provide direct native intervals for backfill where the provider adapter supports the requested interval.
 - Bybit futures backfill reads mark-price candles from `/v5/market/mark-price-kline`.
 - Bybit spot backfill reads trade candles from `/v5/market/kline`.
+- OKX backfill reads candles from `/api/v5/market/history-candles`; recent/open candles may read from `/api/v5/market/candles`.
 - OANDA stores canonical `1m` candles and higher intervals are aggregated from them.
 - If a smaller source interval already exists locally and can be aggregated to the target interval, KlineHub may serve aggregated data from stored candles.
 
@@ -276,6 +291,18 @@ curl "http://127.0.0.1:8088/api/klines?exchange=bybit&market=futures&symbol=BTCU
 
 ```bash
 curl "http://127.0.0.1:8088/api/klines?exchange=bybit&market=spot&symbol=BTCUSDT&interval=1h&limit=100"
+```
+
+#### Example: OKX futures
+
+```bash
+curl "http://127.0.0.1:8088/api/klines?exchange=okx&market=futures&symbol=BTC-USDT-SWAP&interval=1h&limit=100"
+```
+
+#### Example: OKX spot
+
+```bash
+curl "http://127.0.0.1:8088/api/klines?exchange=okx&market=spot&symbol=BTC-USDT&interval=1h&limit=100"
 ```
 
 #### Example: OANDA forex
@@ -456,12 +483,13 @@ Content-Type: application/json
 
 | Field | Type | Required | Default | Description |
 | --- | --- | --- | --- | --- |
-| `exchange` | string | Yes | - | `binance`, `bybit`, `oanda` |
+| `exchange` | string | Yes | - | `binance`, `bybit`, `okx`, `oanda` |
 | `market` | string | Yes | - | Exchange market |
 | `symbol` | string | Yes | - | Instrument symbol; Bybit accepts canonical symbol or matching `displayName` alias |
 | `interval` | string | No | `1h` | Tracked interval |
 | `source` | string | No | `api` | Source marker for bookkeeping |
 | `priority` | integer | No | `100` | Internal priority field |
+| `auto_stop_at` | datetime or null | No | `null` | Auto-pause time for on-demand tracked pairs |
 | `backfill_limit` | integer | No | `null` | Recent backfill size, max `1000` |
 
 #### Request example: Bybit futures
@@ -516,6 +544,7 @@ Tracked OANDA pairs must use canonical ingestion interval `1m`.
   "status": "active",
   "source": "api",
   "priority": 100,
+  "auto_stop_at": null,
   "created_at": "2026-04-09T11:30:00.000000",
   "updated_at": "2026-04-09T11:30:00.000000"
 }
@@ -620,11 +649,14 @@ Content-Type: application/json
 | --- | --- | --- | --- |
 | `dry_run` | boolean | `false` | Preview changes without applying them |
 | `mode` | string | `pause` | What to do with stale tracked pairs: `pause` or `delete` |
-| `crypto_interval` | string | `1h` | Interval for Binance and Bybit tracked pairs |
+| `crypto_interval` | string | `1h` | Interval for Binance, Bybit, and OKX tracked pairs |
 | `oanda_interval` | string | `1m` | OANDA tracked interval; must be `1m` |
 | `bybit.quotes` | array | `["USDT", "USDC"]` | Quote coins accepted for Bybit candidates |
 | `bybit.spot_base_limit` | integer | `100` | CoinMarketCap top-base limit for Bybit spot |
 | `bybit.futures_base_limit` | integer | `100` | CoinMarketCap top-base limit for Bybit futures |
+| `okx.quotes` | array | `["USDT", "USDC"]` | Quote coins accepted for OKX candidates |
+| `okx.spot_base_limit` | integer | `100` | CoinMarketCap top-base limit for OKX spot |
+| `okx.futures_base_limit` | integer | `100` | CoinMarketCap top-base limit for OKX futures |
 
 #### Request example: Bybit-focused dry run
 
@@ -636,6 +668,11 @@ curl -X POST http://127.0.0.1:8088/internal/refresh-popular-pairs \
     "mode": "pause",
     "crypto_interval": "1h",
     "bybit": {
+      "quotes": ["USDT", "USDC"],
+      "spot_base_limit": 50,
+      "futures_base_limit": 50
+    },
+    "okx": {
       "quotes": ["USDT", "USDC"],
       "spot_base_limit": 50,
       "futures_base_limit": 50
@@ -822,7 +859,7 @@ Typical outcomes:
 | --- | --- |
 | Validation error on query/body | `422 Unprocessable Entity` |
 | Missing tracked pair for pause/resume/delete | `404 Not Found` |
-| Invalid Bybit symbol on `/api/klines` or `POST /internal/pairs` | `400 Bad Request` |
+| Invalid Bybit or OKX symbol on `/api/klines` or `POST /internal/pairs` | `400 Bad Request` |
 | Other invalid provider symbol or unsupported exchange/market | `400` or `500` depending on current exception path |
 
 Because some provider errors are raised directly from service code, production deployments should consider adding a consistent exception mapping layer if you want a fully stable external contract.
@@ -844,6 +881,8 @@ APP_NAME=market-data-worker
 APP_HOST=0.0.0.0
 APP_PORT=8000
 COINMARKETCAP_API_KEY=...
+ON_DEMAND_TRACKING_TTL_DAYS=2
+ON_DEMAND_TRACKING_CLEANUP_INTERVAL_SEC=300
 ```
 
 ### 11.2 Bybit configuration
@@ -856,7 +895,19 @@ BYBIT_WS_URL=wss://stream.bybit.com
 BYBIT_INSTRUMENTS_CACHE_TTL_SEC=900
 ```
 
-### 11.3 OANDA configuration
+### 11.3 OKX configuration
+
+Optional overrides:
+
+```env
+OKX_REST_URL=https://openapi.okx.com
+OKX_WS_BUSINESS_URL=wss://ws.okx.com:8443/ws/v5/business
+OKX_INSTRUMENTS_CACHE_TTL_SEC=900
+```
+
+OKX requires regional API domains for some accounts. US/AU registrations may need `https://us.okx.com` and EU registrations may need `https://eea.okx.com`.
+
+### 11.4 OANDA configuration
 
 Required for OANDA support:
 
@@ -908,7 +959,27 @@ curl -X POST http://127.0.0.1:8088/internal/pairs \
 curl "http://127.0.0.1:8088/api/klines?exchange=oanda&market=forex&symbol=EUR_USD&interval=1h&limit=100"
 ```
 
-### 12.4 OANDA metals flow
+### 12.4 OKX futures flow
+
+```bash
+curl -X POST http://127.0.0.1:8088/internal/pairs \
+  -H 'Content-Type: application/json' \
+  -d '{"exchange":"okx","market":"futures","symbol":"BTC-USDT-SWAP","interval":"1h","backfill_limit":300}'
+
+curl "http://127.0.0.1:8088/api/klines?exchange=okx&market=futures&symbol=BTC-USDT-SWAP&interval=1h&limit=100"
+```
+
+### 12.5 OKX spot flow
+
+```bash
+curl -X POST http://127.0.0.1:8088/internal/pairs \
+  -H 'Content-Type: application/json' \
+  -d '{"exchange":"okx","market":"spot","symbol":"BTC-USDT","interval":"1h","backfill_limit":300}'
+
+curl "http://127.0.0.1:8088/api/klines?exchange=okx&market=spot&symbol=BTC-USDT&interval=1h&limit=100"
+```
+
+### 12.6 OANDA metals flow
 
 ```bash
 curl -X POST http://127.0.0.1:8088/internal/pairs \
@@ -926,6 +997,8 @@ Important current implementation details:
 - Closed candles are persisted in PostgreSQL and cached in Redis.
 - Open candles are cached in Redis.
 - Stream workers are reloaded after pair create, resume, pause, and delete operations.
+- Public `/api/klines` requests auto-start temporary `source=on_demand` tracked pairs when the requested pair is not currently active.
+- On-demand tracked pairs are paused after their `auto_stop_at` time; candles already written to storage are retained.
 - OANDA reconciliation runs periodically to correct recent candles.
 - Binance streams native exchange kline events directly.
 - Bybit spot streams native exchange kline events directly.

@@ -24,9 +24,9 @@ class StatsResponse(BaseModel):
 
 
 class TrackedPairCreate(BaseModel):
-    exchange: str = Field(..., examples=["binance", "bybit", "oanda"])
+    exchange: str = Field(..., examples=["binance", "bybit", "okx", "oanda"])
     market: str = Field(..., examples=["futures", "spot", "forex"])
-    symbol: str = Field(..., examples=["BTCUSDT"])
+    symbol: str = Field(..., examples=["BTCUSDT", "BTC-USDT-SWAP"])
     interval: str = Field(default="1h", examples=["1h"])
     source: str = Field(default="api")
     priority: int = Field(default=100, ge=0)
@@ -42,6 +42,7 @@ class TrackedPairResponse(BaseModel):
     status: str
     source: str
     priority: int
+    auto_stop_at: datetime | None = None
     created_at: datetime
     updated_at: datetime
 
@@ -105,6 +106,11 @@ class RefreshPopularPairsBybitConfig(RefreshPopularPairsExchangeConfig):
     futures_base_limit: int = Field(default=100, ge=1, le=1000)
 
 
+class RefreshPopularPairsOkxConfig(RefreshPopularPairsExchangeConfig):
+    spot_base_limit: int = Field(default=100, ge=1, le=1000)
+    futures_base_limit: int = Field(default=100, ge=1, le=1000)
+
+
 class RefreshPopularPairsOandaConfig(BaseModel):
     enable_forex: bool = True
     enable_metals: bool = True
@@ -151,6 +157,7 @@ class RefreshPopularPairsRequest(BaseModel):
     oanda_interval: str = "1m"
     binance: RefreshPopularPairsBinanceConfig = Field(default_factory=RefreshPopularPairsBinanceConfig)
     bybit: RefreshPopularPairsBybitConfig = Field(default_factory=RefreshPopularPairsBybitConfig)
+    okx: RefreshPopularPairsOkxConfig = Field(default_factory=RefreshPopularPairsOkxConfig)
     oanda: RefreshPopularPairsOandaConfig = Field(default_factory=RefreshPopularPairsOandaConfig)
 
 

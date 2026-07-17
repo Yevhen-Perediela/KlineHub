@@ -18,6 +18,7 @@ from .services.backfill_service import BackfillService
 from .services.popular_pairs_service import PopularPairsService
 from .services.realtime_service import RealtimeService
 from .services.stream_manager import StreamManager
+from .services.on_demand_tracking_service import OnDemandTrackingService
 from .state import runtime_state
 
 logging.basicConfig(
@@ -37,6 +38,18 @@ popular_pairs_service = PopularPairsService(
     backfill_service=backfill_service,
     stream_manager=stream_manager,
 )
+on_demand_tracking_service = OnDemandTrackingService(
+    session_factory=SessionLocal,
+    stream_manager=stream_manager,
+)
+
+
+async def ensure_schema_upgrades() -> None:
+    async with engine.begin() as conn:
+        await conn.execute(text("ALTER TABLE tracked_pairs ADD COLUMN IF NOT EXISTS auto_stop_at TIMESTAMP NULL"))
+        await conn.execute(
+            text("CREATE INDEX IF NOT EXISTS ix_tracked_pairs_auto_stop_at ON tracked_pairs (auto_stop_at)")
+        )
 
 
 @asynccontextmanager
@@ -46,11 +59,14 @@ async def lifespan(app: FastAPI):
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
+    await ensure_schema_upgrades()
     await backfill_service.repair_all_active_pairs()
     await stream_manager.start()
+    await on_demand_tracking_service.start()
 
     yield
 
+    await on_demand_tracking_service.stop()
     await stream_manager.stop()
     await close_redis()
     await engine.dispose()
@@ -66,6 +82,7 @@ app.state.stream_manager = stream_manager
 app.state.backfill_service = backfill_service
 app.state.realtime_service = realtime_service
 app.state.popular_pairs_service = popular_pairs_service
+app.state.on_demand_tracking_service = on_demand_tracking_service
 
 
 @app.get("/")
