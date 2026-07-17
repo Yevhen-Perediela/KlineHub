@@ -242,9 +242,40 @@ class CandleService:
         except json.JSONDecodeError:
             return None
 
+        return cls._event_to_bar(event)
+
+    @classmethod
+    async def get_latest_cached_candle(
+        cls,
+        *,
+        exchange: str,
+        market: str,
+        symbol: str,
+        interval: str,
+    ) -> dict[str, Any] | None:
+        redis = get_redis()
+        for key in (
+            cls._open_key(exchange, market, symbol, interval),
+            cls._last_key(exchange, market, symbol, interval),
+        ):
+            payload = await redis.get(key)
+            if not payload:
+                continue
+            try:
+                event = json.loads(payload)
+            except json.JSONDecodeError:
+                continue
+            if not isinstance(event, dict):
+                continue
+            bar = cls._event_to_bar(event)
+            if bar is not None:
+                return bar
+        return None
+
+    @staticmethod
+    def _event_to_bar(event: dict[str, Any]) -> dict[str, Any] | None:
         if not isinstance(event, dict):
             return None
-
         try:
             return {
                 "time": int(event["open_time"]),

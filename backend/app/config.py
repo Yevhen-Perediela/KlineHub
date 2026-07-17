@@ -21,6 +21,12 @@ class Settings(BaseSettings):
     ws_ping_timeout_sec: int = 20
     ws_reconnect_min_sec: int = 3
     ws_reconnect_max_sec: int = 30
+    chart_ws_ping_interval_sec: int = 20
+    chart_ws_idle_timeout_sec: int = 60
+    chart_ws_max_subscriptions: int = 20
+    chart_ws_max_streams_per_request: int = 20
+    chart_ws_outbound_queue_size: int = 100
+    chart_ws_max_message_bytes: int = 64 * 1024
 
     binance_futures_rest_url: str = "https://fapi.binance.com"
     bybit_rest_url: str = "https://api.bybit.com"

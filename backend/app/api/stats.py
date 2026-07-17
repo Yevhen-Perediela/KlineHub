@@ -51,4 +51,5 @@ async def internal_stats(db: AsyncSession = Depends(get_db)) -> StatsResponse:
         ws_connected=runtime_state.ws_connected,
         ws_reconnect_count=runtime_state.ws_reconnect_count,
         candles_persisted_total=runtime_state.candles_persisted_total,
+        chart_ws=runtime_state.chart_ws_metrics(),
     )

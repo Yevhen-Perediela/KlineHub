@@ -17,6 +17,7 @@ from .schemas import InternalHealthResponse
 from .services.backfill_service import BackfillService
 from .services.popular_pairs_service import PopularPairsService
 from .services.realtime_service import RealtimeService
+from .services.chart_ws_service import ChartWebSocketService
 from .services.stream_manager import StreamManager
 from .services.on_demand_tracking_service import OnDemandTrackingService
 from .state import runtime_state
@@ -28,6 +29,11 @@ logging.basicConfig(
 
 backfill_service = BackfillService(session_factory=SessionLocal)
 realtime_service = RealtimeService()
+chart_ws_service = ChartWebSocketService(
+    realtime_service=realtime_service,
+    session_factory=SessionLocal,
+    backfill_service=backfill_service,
+)
 stream_manager = StreamManager(
     session_factory=SessionLocal,
     backfill_service=backfill_service,
@@ -42,6 +48,7 @@ on_demand_tracking_service = OnDemandTrackingService(
     session_factory=SessionLocal,
     stream_manager=stream_manager,
 )
+chart_ws_service.on_demand_tracking_service = on_demand_tracking_service
 
 
 async def ensure_schema_upgrades() -> None:
@@ -81,6 +88,7 @@ app = FastAPI(
 app.state.stream_manager = stream_manager
 app.state.backfill_service = backfill_service
 app.state.realtime_service = realtime_service
+app.state.chart_ws_service = chart_ws_service
 app.state.popular_pairs_service = popular_pairs_service
 app.state.on_demand_tracking_service = on_demand_tracking_service
 
@@ -134,6 +142,7 @@ async def internal_health():
         ws_connected_at=runtime_state.ws_connected_at,
         last_kline_event=runtime_state.last_kline_event,
         last_persisted_candle=runtime_state.last_persisted_candle,
+        chart_ws=runtime_state.chart_ws_metrics(),
     )
 
 

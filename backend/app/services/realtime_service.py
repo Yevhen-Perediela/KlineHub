@@ -18,6 +18,8 @@ class RealtimeService:
         self._connections: set[WebSocket] = set()
         self._subscriptions_by_channel: dict[str, set[WebSocket]] = defaultdict(set)
         self._channels_by_connection: dict[WebSocket, set[str]] = defaultdict(set)
+        self._chart_subscriptions_by_channel: dict[str, set[Any]] = defaultdict(set)
+        self._chart_channels_by_session: dict[Any, set[str]] = defaultdict(set)
         self._lock = asyncio.Lock()
 
     @staticmethod
@@ -131,8 +133,9 @@ class RealtimeService:
 
         async with self._lock:
             subscribers = list(self._subscriptions_by_channel.get(channel, set()))
+            chart_subscribers = list(self._chart_subscriptions_by_channel.get(channel, set()))
 
-        if not subscribers:
+        if not subscribers and not chart_subscribers:
             return
 
         payload = {
@@ -163,6 +166,57 @@ class RealtimeService:
 
         for websocket in dead_connections:
             await self.disconnect(websocket)
+
+        for session in chart_subscribers:
+            session.enqueue_kline(
+                channel=channel,
+                stream={
+                    "exchange": exchange,
+                    "market": market,
+                    "symbol": symbol.upper(),
+                    "interval": interval,
+                },
+                event=event,
+            )
+
+    async def subscribe_chart(self, session: Any, channel: str) -> None:
+        async with self._lock:
+            self._chart_subscriptions_by_channel[channel].add(session)
+            self._chart_channels_by_session[session].add(channel)
+            runtime_state.chart_ws_subscriptions_current = sum(
+                len(v) for v in self._chart_subscriptions_by_channel.values()
+            )
+
+    async def unsubscribe_chart(self, session: Any, channel: str) -> None:
+        async with self._lock:
+            subscribers = self._chart_subscriptions_by_channel.get(channel)
+            if subscribers:
+                subscribers.discard(session)
+                if not subscribers:
+                    self._chart_subscriptions_by_channel.pop(channel, None)
+
+            channels = self._chart_channels_by_session.get(session)
+            if channels:
+                channels.discard(channel)
+                if not channels:
+                    self._chart_channels_by_session.pop(session, None)
+
+            runtime_state.chart_ws_subscriptions_current = sum(
+                len(v) for v in self._chart_subscriptions_by_channel.values()
+            )
+
+    async def disconnect_chart(self, session: Any) -> None:
+        async with self._lock:
+            channels = self._chart_channels_by_session.pop(session, set())
+            for channel in channels:
+                subscribers = self._chart_subscriptions_by_channel.get(channel)
+                if subscribers:
+                    subscribers.discard(session)
+                    if not subscribers:
+                        self._chart_subscriptions_by_channel.pop(channel, None)
+            runtime_state.chart_ws_subscriptions_current = sum(
+                len(v) for v in self._chart_subscriptions_by_channel.values()
+            )
 
     async def stats(self) -> dict[str, int]:
         async with self._lock:

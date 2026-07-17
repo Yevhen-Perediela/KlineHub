@@ -849,6 +849,385 @@ Then send:
 
 Bybit `spot` publishes native kline events through this WebSocket path. Bybit `futures` history is currently stored from mark-price REST candles, and futures WebSocket kline messages are ignored by the stream manager to avoid mixing mark-price history with trade-price live candles.
 
+### 9.2 `WS /ws/chart`
+
+UI-optimized realtime chart endpoint. It is separate from `/ws/market`; the legacy endpoint keeps its existing request schema, response schema, acknowledgements, and channel names.
+
+Use this endpoint when a frontend wants one long-lived WebSocket connection and fast symbol/timeframe switching without reconnecting.
+
+#### Endpoint
+
+```text
+ws://127.0.0.1:8088/ws/chart
+```
+
+#### Connection response
+
+```json
+{
+  "type": "connected",
+  "protocol": "chart-v1",
+  "message": "chart realtime websocket connected"
+}
+```
+
+#### Subscribe
+
+```json
+{
+  "action": "subscribe",
+  "request_id": "req-101",
+  "streams": [
+    {
+      "exchange": "bybit",
+      "market": "spot",
+      "symbol": "BTCUSDT",
+      "interval": "1m"
+    }
+  ]
+}
+```
+
+Acknowledgement:
+
+```json
+{
+  "type": "subscribed",
+  "request_id": "req-101",
+  "streams": [
+    {
+      "exchange": "bybit",
+      "market": "spot",
+      "symbol": "BTCUSDT",
+      "interval": "1m",
+      "channel": "kline:bybit:spot:BTCUSDT:1m"
+    }
+  ]
+}
+```
+
+Duplicate subscribe is idempotent.
+
+#### Unsubscribe
+
+```json
+{
+  "action": "unsubscribe",
+  "request_id": "req-102",
+  "streams": [
+    {
+      "exchange": "bybit",
+      "market": "spot",
+      "symbol": "BTCUSDT",
+      "interval": "1m"
+    }
+  ]
+}
+```
+
+Acknowledgement:
+
+```json
+{
+  "type": "unsubscribed",
+  "request_id": "req-102",
+  "streams": [
+    {
+      "exchange": "bybit",
+      "market": "spot",
+      "symbol": "BTCUSDT",
+      "interval": "1m",
+      "channel": "kline:bybit:spot:BTCUSDT:1m"
+    }
+  ]
+}
+```
+
+Unsubscribing an inactive stream is accepted and returns the canonical channel.
+
+#### Atomic switch
+
+```json
+{
+  "action": "switch",
+  "request_id": "req-103",
+  "unsubscribe": [
+    {
+      "exchange": "bybit",
+      "market": "spot",
+      "symbol": "BTCUSDT",
+      "interval": "1m"
+    }
+  ],
+  "subscribe": [
+    {
+      "exchange": "bybit",
+      "market": "spot",
+      "symbol": "ETHUSDT",
+      "interval": "1m"
+    }
+  ]
+}
+```
+
+Acknowledgement:
+
+```json
+{
+  "type": "switched",
+  "request_id": "req-103",
+  "unsubscribed": [
+    {
+      "exchange": "bybit",
+      "market": "spot",
+      "symbol": "BTCUSDT",
+      "interval": "1m",
+      "channel": "kline:bybit:spot:BTCUSDT:1m"
+    }
+  ],
+  "subscribed": [
+    {
+      "exchange": "bybit",
+      "market": "spot",
+      "symbol": "ETHUSDT",
+      "interval": "1m",
+      "channel": "kline:bybit:spot:ETHUSDT:1m"
+    }
+  ]
+}
+```
+
+The server validates the full switch request before changing the connection subscription set. If any new stream is invalid, no partial switch is applied and existing subscriptions remain active.
+
+#### Snapshot
+
+After a successful `subscribe` or `switch`, the server may send a non-blocking Redis snapshot if an open or last cached candle exists:
+
+```json
+{
+  "type": "snapshot",
+  "request_id": "req-103",
+  "stream": {
+    "exchange": "bybit",
+    "market": "spot",
+    "symbol": "ETHUSDT",
+    "interval": "1m"
+  },
+  "data": {
+    "time": 1774379700000,
+    "open": 3500.1,
+    "high": 3501.8,
+    "low": 3499.7,
+    "close": 3501.2,
+    "volume": 18.42
+  }
+}
+```
+
+If Redis has no cached candle, no snapshot message is sent. Full history should still be loaded through `GET /api/klines`.
+
+#### Cold stream warmup
+
+If the stream is not currently active, the endpoint uses the existing on-demand tracked-pair logic. Activation is single-flight per stream, so concurrent clients do not launch duplicate activation jobs.
+
+```json
+{
+  "type": "warming_up",
+  "request_id": "req-104",
+  "stream": {
+    "exchange": "okx",
+    "market": "spot",
+    "symbol": "NEW-USDT",
+    "interval": "1m"
+  }
+}
+```
+
+When the existing stream manager has been activated/reloaded for that stream:
+
+```json
+{
+  "type": "stream_ready",
+  "request_id": "req-104",
+  "stream": {
+    "exchange": "okx",
+    "market": "spot",
+    "symbol": "NEW-USDT",
+    "interval": "1m"
+  }
+}
+```
+
+#### Realtime kline update
+
+```json
+{
+  "type": "kline",
+  "stream": {
+    "exchange": "bybit",
+    "market": "spot",
+    "symbol": "BTCUSDT",
+    "interval": "1m"
+  },
+  "channel": "kline:bybit:spot:BTCUSDT:1m",
+  "sequence": 123456,
+  "data": {
+    "time": 1774379700000,
+    "open": 69608.4,
+    "high": 69638.3,
+    "low": 69603.1,
+    "close": 69612.3,
+    "volume": 60.691
+  }
+}
+```
+
+`sequence` is assigned by the chart WebSocket gateway and is monotonic per channel within the running KlineHub process.
+
+#### Heartbeat
+
+Server ping:
+
+```json
+{
+  "type": "ping",
+  "timestamp": 1774379700000
+}
+```
+
+Client pong:
+
+```json
+{
+  "action": "pong",
+  "timestamp": 1774379700000
+}
+```
+
+The server closes idle or unavailable connections after the configured timeout.
+
+#### Error schema
+
+```json
+{
+  "type": "error",
+  "request_id": "req-105",
+  "code": "INVALID_SYMBOL",
+  "message": "Invalid symbol for bybit spot",
+  "details": {
+    "exchange": "bybit",
+    "market": "spot",
+    "symbol": "INVALID"
+  }
+}
+```
+
+Possible `code` values include `INVALID_JSON`, `INVALID_MESSAGE`, `UNSUPPORTED_ACTION`, `INVALID_EXCHANGE`, `INVALID_MARKET`, `INVALID_SYMBOL`, `INVALID_INTERVAL`, `INVALID_STREAM`, `SUBSCRIPTION_LIMIT_EXCEEDED`, and `INTERNAL_ERROR`.
+
+#### Limits
+
+Configured with environment variables:
+
+| Variable | Default | Description |
+| --- | ---: | --- |
+| `CHART_WS_PING_INTERVAL_SEC` | `20` | Server ping interval |
+| `CHART_WS_IDLE_TIMEOUT_SEC` | `60` | Idle timeout before close |
+| `CHART_WS_MAX_SUBSCRIPTIONS` | `20` | Max active streams per connection |
+| `CHART_WS_MAX_STREAMS_PER_REQUEST` | `20` | Max streams in one message |
+| `CHART_WS_OUTBOUND_QUEUE_SIZE` | `100` | Per-connection outbound queue |
+| `CHART_WS_MAX_MESSAGE_BYTES` | `65536` | Max inbound JSON message size |
+
+Market updates are dropped when a client is too slow and its outbound queue is full. Acknowledgements and errors are not intentionally dropped.
+
+#### Quick test with `wscat`
+
+```bash
+wscat -c ws://127.0.0.1:8088/ws/chart
+```
+
+Then send:
+
+```json
+{"action":"subscribe","request_id":"req-1","streams":[{"exchange":"bybit","market":"spot","symbol":"BTCUSDT","interval":"1m"}]}
+```
+
+Switch without reconnecting:
+
+```json
+{"action":"switch","request_id":"req-2","unsubscribe":[{"exchange":"bybit","market":"spot","symbol":"BTCUSDT","interval":"1m"}],"subscribe":[{"exchange":"bybit","market":"spot","symbol":"ETHUSDT","interval":"1m"}]}
+```
+
+#### Frontend flow
+
+Recommended UI flow:
+
+1. Open one WebSocket connection to `/ws/chart`.
+2. Send `subscribe` for the first selection, then use `switch` for symbol/timeframe changes.
+3. In parallel, call `GET /api/klines` for historical bars.
+4. Keep realtime `snapshot` and `kline` updates that arrive while the HTTP request is running.
+5. After history returns, merge bars by `time`, with realtime data taking precedence for the open candle.
+6. Ignore messages whose `request_id` no longer matches the current UI selection.
+7. Do not reconnect the WebSocket when changing symbol or interval.
+
+Example TypeScript client:
+
+```ts
+type Stream = {
+  exchange: string;
+  market: string;
+  symbol: string;
+  interval: string;
+};
+
+const ws = new WebSocket("ws://127.0.0.1:8088/ws/chart");
+let currentRequestId = "";
+let currentStream: Stream = { exchange: "bybit", market: "spot", symbol: "BTCUSDT", interval: "1m" };
+const realtimeBars = new Map<number, any>();
+
+ws.onmessage = (event) => {
+  const message = JSON.parse(event.data);
+
+  if (message.type === "ping") {
+    ws.send(JSON.stringify({ action: "pong", timestamp: message.timestamp }));
+    return;
+  }
+
+  if (message.request_id && message.request_id !== currentRequestId) {
+    return;
+  }
+
+  if (message.type === "snapshot" && message.data) {
+    realtimeBars.set(message.data.time, message.data);
+  }
+
+  if (message.type === "kline") {
+    realtimeBars.set(message.data.time, message.data);
+  }
+};
+
+async function selectStream(next: Stream) {
+  const previous = currentStream;
+  currentStream = next;
+  currentRequestId = crypto.randomUUID();
+
+  ws.send(JSON.stringify({
+    action: "switch",
+    request_id: currentRequestId,
+    unsubscribe: [previous],
+    subscribe: [next],
+  }));
+
+  const params = new URLSearchParams(next);
+  params.set("limit", "500");
+  const history = await fetch(`/api/klines?${params}`).then((response) => response.json());
+
+  const merged = new Map<number, any>();
+  for (const bar of history.bars) merged.set(bar.time, bar);
+  for (const [time, bar] of realtimeBars) merged.set(time, bar);
+  return [...merged.values()].sort((a, b) => a.time - b.time);
+}
+```
+
 ## 10. Error Semantics
 
 The service currently mixes framework-native validation responses with direct application exceptions.

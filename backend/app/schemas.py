@@ -21,6 +21,7 @@ class StatsResponse(BaseModel):
     ws_connected: bool
     ws_reconnect_count: int
     candles_persisted_total: int
+    chart_ws: dict[str, int] = Field(default_factory=dict)
 
 
 class TrackedPairCreate(BaseModel):
@@ -76,6 +77,7 @@ class InternalHealthResponse(BaseModel):
     ws_connected_at: datetime | None = None
     last_kline_event: dict | None = None
     last_persisted_candle: dict | None = None
+    chart_ws: dict[str, int] = Field(default_factory=dict)
 
 
 class KlineBarResponse(BaseModel):

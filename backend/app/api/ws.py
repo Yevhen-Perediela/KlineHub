@@ -78,3 +78,9 @@ async def market_ws(websocket: WebSocket):
         await realtime_service.disconnect(websocket)
     except Exception:
         await realtime_service.disconnect(websocket)
+
+
+@router.websocket("/ws/chart")
+async def chart_ws(websocket: WebSocket):
+    chart_ws_service = websocket.app.state.chart_ws_service
+    await chart_ws_service.handle(websocket)
