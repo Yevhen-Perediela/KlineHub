@@ -15,6 +15,11 @@ import {
   Search,
   Clock3,
   CandlestickChart,
+  Gauge,
+  Radio,
+  Layers3,
+  TimerReset,
+  HardDrive,
 } from "lucide-react";
 
 const API_BASE = "";
@@ -36,6 +41,7 @@ type InternalHealth = {
   ws_connected_at?: string | null;
   last_kline_event?: Record<string, unknown> | null;
   last_persisted_candle?: Record<string, unknown> | null;
+  chart_ws?: Record<string, number>;
 };
 
 type InternalStats = {
@@ -48,6 +54,7 @@ type InternalStats = {
   ws_connected: boolean;
   ws_reconnect_count: number;
   candles_persisted_total: number;
+  chart_ws?: Record<string, number>;
 };
 
 type TrackedPair = {
@@ -66,6 +73,69 @@ type TrackedPair = {
 type PairListResponse = {
   items: TrackedPair[];
   count: number;
+};
+
+type OperationalOps = {
+  websocket_clients: Record<string, number>;
+  exchange_limits: Record<
+    string,
+    {
+      requests_total: number;
+      errors_total: number;
+      rate_limited_total: number;
+      last_status_code?: number | null;
+      last_error?: string | null;
+      last_request_at?: string | null;
+      limit?: string | null;
+      remaining?: string | null;
+      used_weight?: string | null;
+      reset_at?: string | null;
+    }
+  >;
+  tracked_pair_lifecycle: {
+    by_source: Record<string, number>;
+    by_status: Record<string, number>;
+    on_demand_active: number;
+    on_demand_expiring_1h: number;
+    recent_changes: Array<{
+      exchange: string;
+      market: string;
+      symbol: string;
+      interval: string;
+      status: string;
+      source: string;
+      auto_stop_at?: string | null;
+      updated_at?: string | null;
+    }>;
+  };
+  stream_workers: Array<{
+    worker_id: number;
+    exchange: string;
+    market: string;
+    provider: string;
+    transport: string;
+    stream_count: number;
+    status: string;
+  }>;
+  cold_streams: {
+    warmup_total: number;
+    warmup_failed_total: number;
+    active_streams_count: number;
+    active_streams: string[];
+  };
+  data_freshness: Array<{
+    exchange: string;
+    market: string;
+    symbol: string;
+    interval: string;
+    status: string;
+    source: string;
+    last_closed_open_time?: number | null;
+    age_sec?: number | null;
+    open_cached: boolean;
+    last_cached: boolean;
+    stale: boolean;
+  }>;
 };
 
 type RefreshPopularPairsResponse = {
@@ -128,6 +198,19 @@ function formatDate(value?: string | null) {
   if (!value) return "—";
   const d = new Date(value);
   return isNaN(d.getTime()) ? value : d.toLocaleString();
+}
+
+function formatUnixMs(value?: number | null) {
+  if (!value) return "—";
+  return new Date(value).toLocaleString();
+}
+
+function formatAge(seconds?: number | null) {
+  if (seconds === null || seconds === undefined) return "—";
+  if (seconds < 60) return `${seconds}s`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h`;
+  return `${Math.floor(seconds / 86400)}d`;
 }
 
 function statusPill(ok: boolean) {
@@ -235,6 +318,7 @@ function HealthBadge({ label, ok }: { label: string; ok: boolean }) {
 export default function KlineHubMonitorDashboard() {
   const [health, setHealth] = useState<InternalHealth | null>(null);
   const [stats, setStats] = useState<InternalStats | null>(null);
+  const [ops, setOps] = useState<OperationalOps | null>(null);
   const [pairs, setPairs] = useState<TrackedPair[]>([]);
   const [loading, setLoading] = useState(true);
   const [mutating, setMutating] = useState(false);
@@ -249,14 +333,16 @@ export default function KlineHubMonitorDashboard() {
     setError("");
     setLoading(true);
     try {
-      const [healthRes, statsRes, pairsRes] = await Promise.all([
+      const [healthRes, statsRes, pairsRes, opsRes] = await Promise.all([
         fetchJson<InternalHealth>("/internal/health"),
         fetchJson<InternalStats>("/internal/stats"),
         fetchJson<PairListResponse>("/internal/pairs"),
+        fetchJson<OperationalOps>("/internal/ops"),
       ]);
       setHealth(healthRes);
       setStats(statsRes);
       setPairs(pairsRes.items);
+      setOps(opsRes);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load data");
     } finally {
@@ -280,6 +366,19 @@ export default function KlineHubMonitorDashboard() {
         .includes(q)
     );
   }, [pairs, search]);
+
+  const staleFreshness = useMemo(
+    () => (ops?.data_freshness ?? []).filter((item) => item.stale).slice(0, 8),
+    [ops]
+  );
+
+  const freshestPairs = useMemo(
+    () =>
+      [...(ops?.data_freshness ?? [])]
+        .sort((a, b) => (a.age_sec ?? Number.MAX_SAFE_INTEGER) - (b.age_sec ?? Number.MAX_SAFE_INTEGER))
+        .slice(0, 8),
+    [ops]
+  );
 
   const submitAddPair = async () => {
     setMutating(true);
@@ -390,17 +489,11 @@ export default function KlineHubMonitorDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute left-[-10%] top-[-10%] h-[28rem] w-[28rem] rounded-full bg-cyan-500/10 blur-3xl" />
-        <div className="absolute right-[-10%] top-[10%] h-[26rem] w-[26rem] rounded-full bg-indigo-500/10 blur-3xl" />
-        <div className="absolute bottom-[-8%] left-[20%] h-[24rem] w-[24rem] rounded-full bg-fuchsia-500/10 blur-3xl" />
-      </div>
-
+    <div className="min-h-screen bg-black text-slate-100">
       <div className="relative mx-auto max-w-7xl p-4 md:p-6 lg:p-8">
         <div className="mb-8 flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-400/20 bg-cyan-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-cyan-200">
+            <div className="inline-flex items-center gap-2 rounded-lg border border-cyan-400/20 bg-cyan-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em] text-cyan-200">
               <Waves className="h-3.5 w-3.5" />
               KlineHub
             </div>
@@ -415,7 +508,7 @@ export default function KlineHubMonitorDashboard() {
           <button
             onClick={loadAll}
             disabled={loading || mutating}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/8 px-4 py-2.5 text-sm font-medium text-white backdrop-blur transition hover:bg-white/15 disabled:opacity-50"
+            className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-white/8 px-4 py-2.5 text-sm font-medium text-white backdrop-blur transition hover:bg-white/15 disabled:opacity-50"
           >
             <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
             Refresh
@@ -457,6 +550,157 @@ export default function KlineHubMonitorDashboard() {
             icon={CandlestickChart}
             accent="bg-gradient-to-r from-amber-400/80 to-orange-500/80"
           />
+        </div>
+
+        <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-3">
+          <div className="rounded-lg border border-white/10 bg-zinc-950 p-5 shadow-xl shadow-black/40">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-white">Realtime gateway</h2>
+                <p className="text-sm text-slate-500">Connections from external projects</p>
+              </div>
+              <Radio className="h-5 w-5 text-cyan-300" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <CompactStatCard title="Chart clients" value={ops?.websocket_clients.chart_ws_connections_current ?? 0} icon={Wifi} accent="bg-cyan-400/80" />
+              <CompactStatCard title="Chart subs" value={ops?.websocket_clients.chart_ws_subscriptions_current ?? 0} icon={Activity} accent="bg-emerald-400/80" />
+              <CompactStatCard title="Legacy clients" value={ops?.websocket_clients.legacy_market_clients ?? 0} icon={Server} accent="bg-slate-400/80" />
+              <CompactStatCard title="Dropped updates" value={ops?.websocket_clients.chart_ws_dropped_updates_total ?? 0} icon={AlertTriangle} accent="bg-rose-400/80" />
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-white/10 bg-zinc-950 p-5 shadow-xl shadow-black/40">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-white">Exchange limits</h2>
+                <p className="text-sm text-slate-500">REST usage, errors, and rate-limit signals</p>
+              </div>
+              <Gauge className="h-5 w-5 text-amber-300" />
+            </div>
+            <div className="space-y-3">
+              {Object.entries(ops?.exchange_limits ?? {}).map(([exchange, item]) => (
+                <div key={exchange} className="rounded-lg border border-white/10 bg-black/50 p-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="font-semibold uppercase text-white">{exchange}</div>
+                    <span className={`rounded-md px-2 py-1 text-xs ${item.rate_limited_total ? "bg-rose-500/15 text-rose-200" : "bg-emerald-500/15 text-emerald-200"}`}>
+                      {item.rate_limited_total ? "rate limited" : "ok"}
+                    </span>
+                  </div>
+                  <div className="mt-2 grid grid-cols-3 gap-2 text-xs text-slate-400">
+                    <div>Requests <span className="text-white">{item.requests_total}</span></div>
+                    <div>Errors <span className="text-white">{item.errors_total}</span></div>
+                    <div>429 <span className="text-white">{item.rate_limited_total}</span></div>
+                    <div>Status <span className="text-white">{item.last_status_code ?? "—"}</span></div>
+                    <div>Remaining <span className="text-white">{item.remaining ?? "—"}</span></div>
+                    <div>Weight <span className="text-white">{item.used_weight ?? "—"}</span></div>
+                  </div>
+                  {item.last_error ? <div className="mt-2 truncate text-xs text-rose-300">{item.last_error}</div> : null}
+                </div>
+              ))}
+              {!Object.keys(ops?.exchange_limits ?? {}).length ? (
+                <div className="rounded-lg border border-white/10 bg-black/50 p-4 text-sm text-slate-500">No REST telemetry yet.</div>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-white/10 bg-zinc-950 p-5 shadow-xl shadow-black/40">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-white">Pair automation</h2>
+                <p className="text-sm text-slate-500">Auto-added, paused, and on-demand tracking</p>
+              </div>
+              <Layers3 className="h-5 w-5 text-violet-300" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <CompactStatCard title="On-demand active" value={ops?.tracked_pair_lifecycle.on_demand_active ?? 0} icon={TimerReset} accent="bg-violet-400/80" />
+              <CompactStatCard title="Expiring 1h" value={ops?.tracked_pair_lifecycle.on_demand_expiring_1h ?? 0} icon={Clock3} accent="bg-amber-400/80" />
+            </div>
+            <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+              <div className="rounded-lg border border-white/10 bg-black/50 p-3">
+                <div className="mb-2 text-xs uppercase tracking-[0.16em] text-slate-500">By source</div>
+                {Object.entries(ops?.tracked_pair_lifecycle.by_source ?? {}).map(([key, value]) => (
+                  <div key={key} className="flex justify-between text-slate-300"><span>{key}</span><span className="text-white">{value}</span></div>
+                ))}
+              </div>
+              <div className="rounded-lg border border-white/10 bg-black/50 p-3">
+                <div className="mb-2 text-xs uppercase tracking-[0.16em] text-slate-500">By status</div>
+                {Object.entries(ops?.tracked_pair_lifecycle.by_status ?? {}).map(([key, value]) => (
+                  <div key={key} className="flex justify-between text-slate-300"><span>{key}</span><span className="text-white">{value}</span></div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-6 grid grid-cols-1 gap-4 xl:grid-cols-[1fr_1.2fr]">
+          <div className="rounded-lg border border-white/10 bg-zinc-950 p-5 shadow-xl shadow-black/40">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-white">Stream workers</h2>
+                <p className="text-sm text-slate-500">Upstream worker groups and stream density</p>
+              </div>
+              <HardDrive className="h-5 w-5 text-emerald-300" />
+            </div>
+            <div className="space-y-2">
+              {(ops?.stream_workers ?? []).map((worker) => (
+                <div key={worker.worker_id} className="grid grid-cols-[3rem_1fr_auto] items-center gap-3 rounded-lg border border-white/10 bg-black/50 px-3 py-2 text-sm">
+                  <div className="text-slate-500">#{worker.worker_id}</div>
+                  <div>
+                    <div className="font-medium text-white">{worker.exchange} / {worker.market}</div>
+                    <div className="text-xs text-slate-500">{worker.provider} · {worker.transport} · {worker.status}</div>
+                  </div>
+                  <div className="rounded-md bg-cyan-500/10 px-2 py-1 text-xs text-cyan-200">{worker.stream_count} streams</div>
+                </div>
+              ))}
+              {!(ops?.stream_workers ?? []).length ? (
+                <div className="rounded-lg border border-white/10 bg-black/50 p-4 text-sm text-slate-500">No active workers configured.</div>
+              ) : null}
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-white/10 bg-zinc-950 p-5 shadow-xl shadow-black/40">
+            <div className="mb-4 flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-white">Cold streams and freshness</h2>
+                <p className="text-sm text-slate-500">Warmups, stale pairs, and Redis cache availability</p>
+              </div>
+              <TimerReset className="h-5 w-5 text-fuchsia-300" />
+            </div>
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+              <CompactStatCard title="Warmups" value={ops?.cold_streams.warmup_total ?? 0} icon={RefreshCw} accent="bg-fuchsia-400/80" />
+              <CompactStatCard title="Warmup failed" value={ops?.cold_streams.warmup_failed_total ?? 0} icon={AlertTriangle} accent="bg-rose-400/80" />
+              <CompactStatCard title="Stale active" value={staleFreshness.length} icon={Clock3} accent="bg-amber-400/80" />
+              <CompactStatCard title="Active streams" value={ops?.cold_streams.active_streams_count ?? 0} icon={Wifi} accent="bg-cyan-400/80" />
+            </div>
+            <div className="mt-4 overflow-hidden rounded-lg border border-white/10 bg-black/50">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-zinc-950 text-slate-500">
+                  <tr>
+                    <th className="px-3 py-2 font-medium">Pair</th>
+                    <th className="px-3 py-2 font-medium">Age</th>
+                    <th className="px-3 py-2 font-medium">Redis</th>
+                    <th className="px-3 py-2 font-medium">Last closed</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {freshestPairs.map((item) => (
+                    <tr key={`${item.exchange}:${item.market}:${item.symbol}:${item.interval}`} className="border-t border-white/5">
+                      <td className="px-3 py-2">
+                        <div className="font-medium text-white">{item.symbol}</div>
+                        <div className="text-slate-500">{item.exchange}/{item.market} · {item.interval}</div>
+                      </td>
+                      <td className={`px-3 py-2 ${item.stale ? "text-amber-200" : "text-slate-300"}`}>{formatAge(item.age_sec)}</td>
+                      <td className="px-3 py-2 text-slate-300">{item.open_cached ? "open" : "—"} / {item.last_cached ? "last" : "—"}</td>
+                      <td className="px-3 py-2 text-slate-400">{formatUnixMs(item.last_closed_open_time)}</td>
+                    </tr>
+                  ))}
+                  {!freshestPairs.length ? (
+                    <tr><td colSpan={4} className="px-3 py-6 text-center text-slate-500">No freshness data yet.</td></tr>
+                  ) : null}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
 
         <div className="mt-8 grid grid-cols-1 gap-6 xl:grid-cols-[1.35fr_0.95fr]">

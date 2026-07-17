@@ -139,6 +139,18 @@ class StreamManager:
                 runtime_state.ws_last_error = None
 
                 workers = await self._load_worker_specs()
+                runtime_state.stream_workers = [
+                    {
+                        "worker_id": idx,
+                        "exchange": worker.exchange,
+                        "market": worker.market,
+                        "provider": worker.adapter.provider_id,
+                        "transport": worker.adapter.stream_transport,
+                        "stream_count": len(worker.subscriptions),
+                        "status": "configured",
+                    }
+                    for idx, worker in enumerate(workers, start=1)
+                ]
                 runtime_state.active_streams = [
                     f"{item.exchange}:{item.market}:{item.symbol}:{item.interval}"
                     for worker in workers
@@ -149,6 +161,7 @@ class StreamManager:
                 if not workers:
                     runtime_state.ws_connected = False
                     runtime_state.ws_connecting = False
+                    runtime_state.stream_workers = []
                     logger.info("No active streams configured, sleeping")
                     await asyncio.sleep(5)
                     continue

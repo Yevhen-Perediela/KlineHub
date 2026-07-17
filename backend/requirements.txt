@@ -10,3 +10,5 @@ websockets==15.0.1
 python-dotenv==1.0.1
 # asyncio==3.0.0
 httpx
+pytest==8.3.4
+pytest-asyncio==0.25.3

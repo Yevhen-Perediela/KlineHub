@@ -20,6 +20,7 @@ from ..schemas import (
     RefreshPopularPairsSummary,
 )
 from .backfill_service import BackfillService
+from .exchange_limit_service import record_http_error, record_http_response
 from .stream_manager import StreamManager
 
 
@@ -402,18 +403,23 @@ class PopularPairsService:
             raise ValueError("COINMARKETCAP_API_KEY is required for popular pair refresh")
 
         async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.get(
-                f"{settings.coinmarketcap_api_url}/v1/cryptocurrency/listings/latest",
-                headers={
-                    "X-CMC_PRO_API_KEY": api_key,
-                    "Accept": "application/json",
-                },
-                params={
-                    "start": 1,
-                    "limit": settings.coinmarketcap_listings_limit,
-                    "convert": "USD",
-                },
-            )
+            try:
+                response = await client.get(
+                    f"{settings.coinmarketcap_api_url}/v1/cryptocurrency/listings/latest",
+                    headers={
+                        "X-CMC_PRO_API_KEY": api_key,
+                        "Accept": "application/json",
+                    },
+                    params={
+                        "start": 1,
+                        "limit": settings.coinmarketcap_listings_limit,
+                        "convert": "USD",
+                    },
+                )
+                record_http_response(exchange="coinmarketcap", response=response)
+            except Exception as exc:
+                record_http_error(exchange="coinmarketcap", error=exc)
+                raise
 
         response.raise_for_status()
         payload = response.json()

@@ -6,6 +6,7 @@ from typing import Any
 
 import httpx
 
+from ..services.exchange_limit_service import record_http_error, record_http_response
 from .base import ProviderAdapter
 
 
@@ -79,10 +80,15 @@ class BinanceSpotAdapter(ProviderAdapter):
             params["limit"] = int(limit)
 
         async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.get(
-                f"{self.REST_BASE_URL}/api/v3/klines",
-                params=params,
-            )
+            try:
+                response = await client.get(
+                    f"{self.REST_BASE_URL}/api/v3/klines",
+                    params=params,
+                )
+                record_http_response(exchange="binance", response=response)
+            except Exception as exc:
+                record_http_error(exchange="binance", error=exc)
+                raise
 
         if response.status_code == 400:
             try:
@@ -131,7 +137,12 @@ class BinanceSpotAdapter(ProviderAdapter):
                 return items
 
         async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.get(f"{self.REST_BASE_URL}/api/v3/exchangeInfo")
+            try:
+                response = await client.get(f"{self.REST_BASE_URL}/api/v3/exchangeInfo")
+                record_http_response(exchange="binance", response=response)
+            except Exception as exc:
+                record_http_error(exchange="binance", error=exc)
+                raise
 
         response.raise_for_status()
         payload = response.json()

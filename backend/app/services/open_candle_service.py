@@ -10,6 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..config import settings
 from ..exchanges.registry import get_adapter
+from .exchange_limit_service import record_http_error, record_http_response
 from ..models import Candle
 from ..utils.intervals import (
     floor_to_interval_open,
@@ -318,15 +319,20 @@ class OpenCandleService:
         current_open_ts: int,
     ) -> list[dict[str, Any]]:
         async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.get(
-                "https://api.binance.com/api/v3/klines",
-                params={
-                    "symbol": symbol.upper(),
-                    "interval": interval,
-                    "startTime": current_open_ts,
-                    "limit": 1,
-                },
-            )
+            try:
+                response = await client.get(
+                    "https://api.binance.com/api/v3/klines",
+                    params={
+                        "symbol": symbol.upper(),
+                        "interval": interval,
+                        "startTime": current_open_ts,
+                        "limit": 1,
+                    },
+                )
+                record_http_response(exchange="binance", response=response)
+            except Exception as exc:
+                record_http_error(exchange="binance", error=exc)
+                raise
         response.raise_for_status()
         return OpenCandleService._binance_rows_to_events(response.json())
 
@@ -338,15 +344,20 @@ class OpenCandleService:
         current_open_ts: int,
     ) -> list[dict[str, Any]]:
         async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.get(
-                f"{settings.binance_futures_rest_url}/fapi/v1/klines",
-                params={
-                    "symbol": symbol.upper(),
-                    "interval": interval,
-                    "startTime": current_open_ts,
-                    "limit": 1,
-                },
-            )
+            try:
+                response = await client.get(
+                    f"{settings.binance_futures_rest_url}/fapi/v1/klines",
+                    params={
+                        "symbol": symbol.upper(),
+                        "interval": interval,
+                        "startTime": current_open_ts,
+                        "limit": 1,
+                    },
+                )
+                record_http_response(exchange="binance", response=response)
+            except Exception as exc:
+                record_http_error(exchange="binance", error=exc)
+                raise
         response.raise_for_status()
         return OpenCandleService._binance_rows_to_events(response.json())
 

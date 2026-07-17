@@ -8,6 +8,7 @@ from typing import Any
 import httpx
 
 from ..config import settings
+from ..services.exchange_limit_service import record_http_error, record_http_response
 from .base import ProviderAdapter
 
 
@@ -124,11 +125,16 @@ class OandaAdapter(ProviderAdapter):
             params["count"] = int(limit)
 
         async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.get(
-                f"{settings.oanda_rest_url}/v3/instruments/{symbol.upper()}/candles",
-                params=params,
-                headers=self.build_headers(),
-            )
+            try:
+                response = await client.get(
+                    f"{settings.oanda_rest_url}/v3/instruments/{symbol.upper()}/candles",
+                    params=params,
+                    headers=self.build_headers(),
+                )
+                record_http_response(exchange="oanda", response=response)
+            except Exception as exc:
+                record_http_error(exchange="oanda", error=exc)
+                raise
 
         if response.status_code == 404:
             raise InvalidOandaInstrumentError(f"Invalid OANDA instrument: {symbol}")
@@ -179,10 +185,15 @@ class OandaAdapter(ProviderAdapter):
             return self._instrument_cache
 
         async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.get(
-                f"{settings.oanda_rest_url}/v3/accounts/{settings.oanda_account_id}/instruments",
-                headers=self.build_headers(),
-            )
+            try:
+                response = await client.get(
+                    f"{settings.oanda_rest_url}/v3/accounts/{settings.oanda_account_id}/instruments",
+                    headers=self.build_headers(),
+                )
+                record_http_response(exchange="oanda", response=response)
+            except Exception as exc:
+                record_http_error(exchange="oanda", error=exc)
+                raise
 
         response.raise_for_status()
         payload = response.json()

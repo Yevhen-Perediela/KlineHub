@@ -7,6 +7,7 @@ from typing import Any
 import httpx
 
 from ..config import settings
+from ..services.exchange_limit_service import record_http_error, record_http_response
 from ..utils.intervals import latest_closed_open_time, next_interval_open
 from .base import ProviderAdapter
 
@@ -125,10 +126,15 @@ class BybitAdapter(ProviderAdapter):
         endpoint = "mark-price-kline" if is_mark_price else "kline"
 
         async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.get(
-                f"{settings.bybit_rest_url}/v5/market/{endpoint}",
-                params=params,
-            )
+            try:
+                response = await client.get(
+                    f"{settings.bybit_rest_url}/v5/market/{endpoint}",
+                    params=params,
+                )
+                record_http_response(exchange="bybit", response=response)
+            except Exception as exc:
+                record_http_error(exchange="bybit", error=exc)
+                raise
 
         response.raise_for_status()
         payload = response.json()
@@ -189,10 +195,15 @@ class BybitAdapter(ProviderAdapter):
                 if cursor:
                     params["cursor"] = cursor
 
-                response = await client.get(
-                    f"{settings.bybit_rest_url}/v5/market/instruments-info",
-                    params=params,
-                )
+                try:
+                    response = await client.get(
+                        f"{settings.bybit_rest_url}/v5/market/instruments-info",
+                        params=params,
+                    )
+                    record_http_response(exchange="bybit", response=response)
+                except Exception as exc:
+                    record_http_error(exchange="bybit", error=exc)
+                    raise
                 response.raise_for_status()
                 payload = response.json()
                 self._raise_on_error(payload=payload)

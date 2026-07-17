@@ -8,6 +8,8 @@ import aiohttp
 import httpx
 
 from ..config import settings
+from ..services.exchange_limit_service import record_http_error, record_http_response
+from ..state import runtime_state
 from ..utils.intervals import latest_closed_open_time
 from .base import ProviderAdapter
 
@@ -84,9 +86,18 @@ class BinanceFuturesAdapter(ProviderAdapter):
         url = f"{settings.binance_futures_rest_url}/fapi/v1/klines"
 
         async with aiohttp.ClientSession() as session:
-            async with session.get(url, params=params, timeout=30) as response:
-                response.raise_for_status()
-                payload = await response.json()
+            try:
+                async with session.get(url, params=params, timeout=30) as response:
+                    runtime_state.record_exchange_http_response(
+                        exchange="binance",
+                        status_code=int(response.status),
+                        headers=dict(response.headers),
+                    )
+                    response.raise_for_status()
+                    payload = await response.json()
+            except Exception as exc:
+                record_http_error(exchange="binance", error=exc)
+                raise
 
         if not isinstance(payload, list):
             return []
@@ -142,7 +153,12 @@ class BinanceFuturesAdapter(ProviderAdapter):
                 return items
 
         async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.get(f"{settings.binance_futures_rest_url}/fapi/v1/exchangeInfo")
+            try:
+                response = await client.get(f"{settings.binance_futures_rest_url}/fapi/v1/exchangeInfo")
+                record_http_response(exchange="binance", response=response)
+            except Exception as exc:
+                record_http_error(exchange="binance", error=exc)
+                raise
 
         response.raise_for_status()
         payload = response.json()

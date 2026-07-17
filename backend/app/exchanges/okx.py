@@ -7,6 +7,7 @@ from typing import Any
 import httpx
 
 from ..config import settings
+from ..services.exchange_limit_service import record_http_error, record_http_response
 from ..utils.intervals import latest_closed_open_time, next_interval_open
 from .base import ProviderAdapter
 
@@ -120,10 +121,15 @@ class OkxAdapter(ProviderAdapter):
                 if start_time is not None:
                     params["before"] = max(0, int(start_time) - 1)
 
-                response = await client.get(
-                    f"{settings.okx_rest_url}/api/v5/market/{endpoint}",
-                    params=params,
-                )
+                try:
+                    response = await client.get(
+                        f"{settings.okx_rest_url}/api/v5/market/{endpoint}",
+                        params=params,
+                    )
+                    record_http_response(exchange="okx", response=response)
+                except Exception as exc:
+                    record_http_error(exchange="okx", error=exc)
+                    raise
                 response.raise_for_status()
                 payload = response.json()
                 self._raise_on_error(payload=payload, symbol=inst_id)
@@ -177,10 +183,15 @@ class OkxAdapter(ProviderAdapter):
                 return items
 
         async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.get(
-                f"{settings.okx_rest_url}/api/v5/public/instruments",
-                params={"instType": inst_type},
-            )
+            try:
+                response = await client.get(
+                    f"{settings.okx_rest_url}/api/v5/public/instruments",
+                    params={"instType": inst_type},
+                )
+                record_http_response(exchange="okx", response=response)
+            except Exception as exc:
+                record_http_error(exchange="okx", error=exc)
+                raise
 
         response.raise_for_status()
         payload = response.json()
