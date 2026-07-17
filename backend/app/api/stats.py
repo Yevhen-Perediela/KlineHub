@@ -1,11 +1,12 @@
 from datetime import datetime, timedelta
+import json
 
 from fastapi import APIRouter, Depends
 from sqlalchemy import select, func, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..db import get_db, engine
-from ..models import Candle, TrackedPair
+from ..models import TrackedPair
 from ..redis_client import get_redis
 from ..schemas import StatsResponse
 from ..services.candle_service import CandleService
@@ -65,26 +66,6 @@ async def internal_ops(db: AsyncSession = Depends(get_db)) -> dict:
     )
     pairs = list(result.scalars().all())
 
-    latest_rows = await db.execute(
-        select(
-            Candle.exchange,
-            Candle.market,
-            Candle.symbol,
-            Candle.interval,
-            func.max(Candle.open_time),
-        ).group_by(
-            Candle.exchange,
-            Candle.market,
-            Candle.symbol,
-            Candle.interval,
-        )
-    )
-    latest_by_key = {
-        (exchange, market, symbol, interval): int(open_time)
-        for exchange, market, symbol, interval, open_time in latest_rows.all()
-        if open_time is not None
-    }
-
     redis = None
     try:
         redis = get_redis()
@@ -94,25 +75,28 @@ async def internal_ops(db: AsyncSession = Depends(get_db)) -> dict:
     now_ms = int(datetime.utcnow().timestamp() * 1000)
     freshness = []
     for item in pairs:
-        key = (item.exchange, item.market, item.symbol, item.interval)
-        last_closed_open_time = latest_by_key.get(key)
+        last_closed_open_time = None
         open_cached = False
         last_cached = False
         if redis is not None:
             try:
-                open_cached = bool(
-                    await redis.exists(
-                        CandleService._open_key(item.exchange, item.market, item.symbol, item.interval)
-                    )
+                open_payload = await redis.get(
+                    CandleService._open_key(item.exchange, item.market, item.symbol, item.interval)
                 )
-                last_cached = bool(
-                    await redis.exists(
-                        CandleService._last_key(item.exchange, item.market, item.symbol, item.interval)
-                    )
+                last_payload = await redis.get(
+                    CandleService._last_key(item.exchange, item.market, item.symbol, item.interval)
                 )
+                open_cached = bool(open_payload)
+                last_cached = bool(last_payload)
+                payload = last_payload or open_payload
+                if payload:
+                    event = json.loads(payload)
+                    if isinstance(event, dict) and event.get("open_time") is not None:
+                        last_closed_open_time = int(event["open_time"])
             except Exception:
                 open_cached = False
                 last_cached = False
+                last_closed_open_time = None
 
         last_update_ms = last_closed_open_time
         age_sec = None

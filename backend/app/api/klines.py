@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.exceptions import RequestValidationError
+from sqlalchemy.exc import TimeoutError as SQLAlchemyTimeoutError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..exchanges.binance_spot import InvalidSpotSymbolError
@@ -106,11 +107,14 @@ async def get_klines(
     if not is_supported_interval(interval):
         return KlineHistoryResponse(bars=[], noData=True)
 
-    adapter = get_adapter(exchange=exchange, market=market)
+    try:
+        adapter = get_adapter(exchange=exchange, market=market)
+    except ValueError:
+        return KlineHistoryResponse(bars=[], noData=True)
     if exchange in {"bybit", "okx"}:
         try:
             symbol = await adapter.resolve_symbol(market=market, symbol=symbol)  # type: ignore[attr-defined]
-        except (InvalidBybitSymbolError, InvalidOkxSymbolError) as exc:
+        except (InvalidBybitSymbolError, InvalidOkxSymbolError, ValueError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     now_ms = __import__("time").time_ns() // 1_000_000
@@ -138,13 +142,16 @@ async def get_klines(
     should_backfill = True
     preferred_history_interval = adapter.get_history_backfill_interval(interval)
 
-    source_interval = await AggregationService.pick_best_source_interval(
-        db=db,
-        exchange=exchange,
-        market=market,
-        symbol=symbol,
-        target_interval=interval,
-    )
+    try:
+        source_interval = await AggregationService.pick_best_source_interval(
+            db=db,
+            exchange=exchange,
+            market=market,
+            symbol=symbol,
+            target_interval=interval,
+        )
+    except SQLAlchemyTimeoutError as exc:
+        raise HTTPException(status_code=503, detail="database connection pool exhausted") from exc
 
     if source_interval == interval:
         preferred_history_interval = interval
@@ -171,7 +178,7 @@ async def get_klines(
             symbol=symbol,
             interval=tracking_interval,
         )
-    except (InvalidSpotSymbolError, InvalidBybitSymbolError, InvalidOandaInstrumentError, InvalidOkxSymbolError) as exc:
+    except (InvalidSpotSymbolError, InvalidBybitSymbolError, InvalidOandaInstrumentError, InvalidOkxSymbolError, ValueError) as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     await request.app.state.on_demand_tracking_service.ensure_pair_tracked(
@@ -199,7 +206,7 @@ async def get_klines(
                 from_ts=source_from,
                 to_ts=source_to,
             )
-        except (InvalidBybitSymbolError, InvalidOkxSymbolError) as exc:
+        except (InvalidBybitSymbolError, InvalidOkxSymbolError, ValueError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     if source_interval == interval:

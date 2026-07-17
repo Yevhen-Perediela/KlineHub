@@ -51,6 +51,7 @@ class StreamManager:
 
         self._stop_event = asyncio.Event()
         self._reload_lock = asyncio.Lock()
+        self._reload_requested = False
 
         self._supervisor_task: asyncio.Task | None = None
         self._worker_tasks: list[asyncio.Task] = []
@@ -127,10 +128,19 @@ class StreamManager:
         runtime_state.active_streams_count = 0
 
     async def reload(self) -> None:
+        if self._reload_lock.locked():
+            self._reload_requested = True
+            logger.info("StreamManager reload coalesced while another reload is running")
+            return
+
         async with self._reload_lock:
-            logger.info("Reloading StreamManager")
-            await self.stop()
-            await self.start()
+            while True:
+                self._reload_requested = False
+                logger.info("Reloading StreamManager")
+                await self.stop()
+                await self.start()
+                if not self._reload_requested:
+                    break
 
     async def _run_supervisor(self) -> None:
         while not self._stop_event.is_set():

@@ -7,6 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from ..config import settings
 from ..db import get_db
 from ..exchanges.bybit import InvalidBybitSymbolError
+from ..exchanges.binance_spot import InvalidSpotSymbolError
+from ..exchanges.oanda import InvalidOandaInstrumentError
 from ..exchanges.okx import InvalidOkxSymbolError
 from ..exchanges.registry import get_adapter
 from ..models import TrackedPair
@@ -51,15 +53,18 @@ async def create_pair(
         try:
             adapter = get_adapter(exchange=exchange, market=market)
             symbol = await adapter.resolve_symbol(market=market, symbol=symbol)  # type: ignore[attr-defined]
-        except (InvalidBybitSymbolError, InvalidOkxSymbolError) as exc:
+        except (InvalidBybitSymbolError, InvalidOkxSymbolError, ValueError) as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    await request.app.state.backfill_service.validate_pair(
-        exchange=exchange,
-        market=market,
-        symbol=symbol,
-        interval=payload.interval,
-    )
+    try:
+        await request.app.state.backfill_service.validate_pair(
+            exchange=exchange,
+            market=market,
+            symbol=symbol,
+            interval=payload.interval,
+        )
+    except (InvalidSpotSymbolError, InvalidBybitSymbolError, InvalidOandaInstrumentError, InvalidOkxSymbolError, ValueError) as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     existing_q = await db.execute(
         select(TrackedPair).where(

@@ -2,6 +2,8 @@ from contextlib import asynccontextmanager
 import logging
 
 from fastapi import FastAPI
+from fastapi.responses import JSONResponse
+from sqlalchemy.exc import TimeoutError as SQLAlchemyTimeoutError
 from sqlalchemy import text
 
 from .config import settings
@@ -100,6 +102,14 @@ async def root():
         "env": settings.app_env,
         "status": "ok",
     }
+
+
+@app.exception_handler(SQLAlchemyTimeoutError)
+async def sqlalchemy_timeout_handler(request, exc):
+    return JSONResponse(
+        status_code=503,
+        content={"detail": "database connection pool exhausted"},
+    )
 
 
 @app.get("/internal/health", response_model=InternalHealthResponse)

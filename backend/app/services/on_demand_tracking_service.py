@@ -26,6 +26,8 @@ class OnDemandTrackingService:
         self.stream_manager = stream_manager
         self._stop_event = asyncio.Event()
         self._task: asyncio.Task | None = None
+        self._activation_lock = asyncio.Lock()
+        self._activation_tasks: dict[tuple[str, str, str, str], asyncio.Task[None]] = {}
 
     async def start(self) -> None:
         if self._task and not self._task.done():
@@ -46,6 +48,35 @@ class OnDemandTrackingService:
             self._task = None
 
     async def ensure_pair_tracked(
+        self,
+        *,
+        exchange: str,
+        market: str,
+        symbol: str,
+        interval: str,
+    ) -> None:
+        key = (exchange.lower(), market.lower(), symbol.upper(), interval)
+        async with self._activation_lock:
+            task = self._activation_tasks.get(key)
+            if task is None or task.done():
+                task = asyncio.create_task(
+                    self._ensure_pair_tracked_once(
+                        exchange=exchange.lower(),
+                        market=market.lower(),
+                        symbol=symbol.upper(),
+                        interval=interval,
+                    )
+                )
+                self._activation_tasks[key] = task
+
+        try:
+            await task
+        finally:
+            async with self._activation_lock:
+                if self._activation_tasks.get(key) is task and task.done():
+                    self._activation_tasks.pop(key, None)
+
+    async def _ensure_pair_tracked_once(
         self,
         *,
         exchange: str,
