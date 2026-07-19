@@ -76,12 +76,14 @@ ws://<host>:8088
 The HTTP kline API accepts the following normalized intervals:
 
 - `1m`
+- `3m`
 - `5m`
 - `15m`
 - `30m`
 - `1h`
 - `2h`
 - `4h`
+- `6h`
 - `12h`
 - `1d`
 - `3d`
@@ -106,7 +108,7 @@ Provider adapters may support only a subset of these intervals natively. In part
 - Uses separate public WebSocket endpoints per market internally
 - Validates and resolves symbols against Bybit `instruments-info`
 - Futures history uses Bybit mark-price klines; stored futures candles have `volume=0`
-- Bybit native history intervals are `1m`, `5m`, `15m`, `30m`, `1h`, `2h`, `4h`, `12h`, `1d`, `1w`, and `1M`
+- Bybit native history intervals are `1m`, `3m`, `5m`, `15m`, `30m`, `1h`, `2h`, `4h`, `6h`, `12h`, `1d`, `1w`, and `1M`
 
 #### OKX
 
