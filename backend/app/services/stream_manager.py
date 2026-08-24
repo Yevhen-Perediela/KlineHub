@@ -56,6 +56,7 @@ class StreamManager:
         self._supervisor_task: asyncio.Task | None = None
         self._worker_tasks: list[asyncio.Task] = []
         self._backfill_task: asyncio.Task | None = None
+        self._backfill_scheduled_for_run = False
         self._reconcile_task: asyncio.Task | None = None
 
         self._streams_per_connection = getattr(settings, "ws_streams_per_connection", 200)
@@ -68,6 +69,7 @@ class StreamManager:
 
         logger.info("Starting StreamManager")
         self._stop_event.clear()
+        self._backfill_scheduled_for_run = False
         self._supervisor_task = asyncio.create_task(self._run_supervisor())
 
     async def stop(self) -> None:
@@ -168,6 +170,12 @@ class StreamManager:
                 ]
                 runtime_state.active_streams_count = len(runtime_state.active_streams)
 
+                if not self._backfill_scheduled_for_run:
+                    self._backfill_task = asyncio.create_task(
+                        self.backfill_service.repair_all_active_pairs()
+                    )
+                    self._backfill_scheduled_for_run = True
+
                 if not workers:
                     runtime_state.ws_connected = False
                     runtime_state.ws_connecting = False
@@ -175,11 +183,6 @@ class StreamManager:
                     logger.info("No active streams configured, sleeping")
                     await asyncio.sleep(5)
                     continue
-
-                if not self._backfill_task or self._backfill_task.done():
-                    self._backfill_task = asyncio.create_task(
-                        self.backfill_service.repair_all_active_pairs()
-                    )
 
                 if not self._reconcile_task or self._reconcile_task.done():
                     self._reconcile_task = asyncio.create_task(self._run_reconcile_loop())

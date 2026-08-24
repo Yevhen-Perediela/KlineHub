@@ -22,10 +22,25 @@ async def migrate_price_basis(conn: AsyncConnection) -> None:
         await conn.execute(
             text(f"ALTER TABLE {table} ALTER COLUMN price_basis SET DEFAULT 'trade'")
         )
+        if table == "candles":
+            # Both legacy lookup indexes duplicate the old unique constraint's
+            # btree exactly. Keep the unique index available while freeing
+            # enough space to build its basis-aware replacement.
+            await conn.execute(text("DROP INDEX IF EXISTS ix_candle_lookup"))
+            await conn.execute(text("DROP INDEX IF EXISTS ix_candle_lookup_desc"))
+            for redundant_index in (
+                "ix_candles_exchange",
+                "ix_candles_market",
+                "ix_candles_symbol",
+                "ix_candles_interval",
+                "ix_candles_open_time",
+                "ix_candles_price_basis",
+            ):
+                await conn.execute(text(f"DROP INDEX IF EXISTS {redundant_index}"))
         await conn.commit()
         legacy_identities = (
             await conn.execute(
-                text(f"SELECT DISTINCT lower(exchange), lower(market) FROM {table}")
+                text(f"SELECT DISTINCT exchange, market FROM {table}")
             )
         ).all()
         for exchange, market in legacy_identities:
@@ -39,8 +54,8 @@ async def migrate_price_basis(conn: AsyncConnection) -> None:
                         WITH batch AS (
                             SELECT id
                             FROM {table}
-                            WHERE lower(exchange) = :exchange
-                              AND lower(market) = :market
+                            WHERE exchange = :exchange
+                              AND market = :market
                               AND price_basis IS DISTINCT FROM :basis
                             ORDER BY id
                             LIMIT 10000
@@ -151,25 +166,8 @@ async def migrate_price_basis(conn: AsyncConnection) -> None:
     )
     await conn.commit()
 
-    await conn.execute(text("DROP INDEX IF EXISTS ix_candle_lookup"))
-    await conn.execute(text("DROP INDEX IF EXISTS ix_candle_lookup_desc"))
-    await conn.execute(
-        text(
-            "CREATE INDEX IF NOT EXISTS ix_candle_lookup ON candles "
-            "(exchange, market, symbol, interval, price_basis, open_time)"
-        )
-    )
-    await conn.execute(
-        text(
-            "CREATE INDEX IF NOT EXISTS ix_candle_lookup_desc ON candles "
-            "(exchange, market, symbol, interval, price_basis, open_time DESC)"
-        )
-    )
     await conn.execute(
         text("CREATE INDEX IF NOT EXISTS ix_tracked_pairs_price_basis ON tracked_pairs (price_basis)")
-    )
-    await conn.execute(
-        text("CREATE INDEX IF NOT EXISTS ix_candles_price_basis ON candles (price_basis)")
     )
     for table, constraint in (
         ("tracked_pairs", "ck_tracked_pairs_price_basis"),

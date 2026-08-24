@@ -10,7 +10,6 @@ from sqlalchemy import (
     Boolean,
     CheckConstraint,
     UniqueConstraint,
-    Index,
 )
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -72,35 +71,17 @@ class Candle(Base):
             "open_time",
             name="uq_candle_exchange_market_symbol_interval_price_basis_open_time",
         ),
-        Index(
-            "ix_candle_lookup",
-            "exchange",
-            "market",
-            "symbol",
-            "interval",
-            "price_basis",
-            "open_time",
-        ),
-        Index(
-            "ix_candle_lookup_desc",
-            "exchange",
-            "market",
-            "symbol",
-            "interval",
-            "price_basis",
-            "open_time",
-        ),
     )
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
 
-    exchange: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
-    market: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
-    symbol: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
-    interval: Mapped[str] = mapped_column(String(16), nullable=False, index=True)
-    price_basis: Mapped[str] = mapped_column(String(16), nullable=False, index=True)
+    exchange: Mapped[str] = mapped_column(String(32), nullable=False)
+    market: Mapped[str] = mapped_column(String(32), nullable=False)
+    symbol: Mapped[str] = mapped_column(String(64), nullable=False)
+    interval: Mapped[str] = mapped_column(String(16), nullable=False)
+    price_basis: Mapped[str] = mapped_column(String(16), nullable=False)
 
-    open_time: Mapped[int] = mapped_column(BigInteger, nullable=False, index=True)
+    open_time: Mapped[int] = mapped_column(BigInteger, nullable=False)
     close_time: Mapped[int] = mapped_column(BigInteger, nullable=False)
 
     open: Mapped[Decimal] = mapped_column(Numeric(36, 18), nullable=False)

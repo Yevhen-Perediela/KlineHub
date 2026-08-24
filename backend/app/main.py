@@ -72,7 +72,6 @@ async def lifespan(app: FastAPI):
         await conn.run_sync(Base.metadata.create_all)
 
     await ensure_schema_upgrades()
-    await backfill_service.repair_all_active_pairs()
     await stream_manager.start()
     await on_demand_tracking_service.start()
 
