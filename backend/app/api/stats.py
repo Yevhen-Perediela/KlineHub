@@ -81,10 +81,14 @@ async def internal_ops(db: AsyncSession = Depends(get_db)) -> dict:
         if redis is not None:
             try:
                 open_payload = await redis.get(
-                    CandleService._open_key(item.exchange, item.market, item.symbol, item.interval)
+                    CandleService._open_key(
+                        item.exchange, item.market, item.symbol, item.interval, item.price_basis
+                    )
                 )
                 last_payload = await redis.get(
-                    CandleService._last_key(item.exchange, item.market, item.symbol, item.interval)
+                    CandleService._last_key(
+                        item.exchange, item.market, item.symbol, item.interval, item.price_basis
+                    )
                 )
                 open_cached = bool(open_payload)
                 last_cached = bool(last_payload)
@@ -109,6 +113,7 @@ async def internal_ops(db: AsyncSession = Depends(get_db)) -> dict:
                 "market": item.market,
                 "symbol": item.symbol,
                 "interval": item.interval,
+                "price_basis": item.price_basis,
                 "status": item.status,
                 "source": item.source,
                 "last_closed_open_time": last_closed_open_time,
@@ -152,6 +157,7 @@ async def internal_ops(db: AsyncSession = Depends(get_db)) -> dict:
                     "market": item.market,
                     "symbol": item.symbol,
                     "interval": item.interval,
+                    "price_basis": item.price_basis,
                     "status": item.status,
                     "source": item.source,
                     "auto_stop_at": item.auto_stop_at.isoformat() if item.auto_stop_at else None,

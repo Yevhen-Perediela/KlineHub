@@ -59,7 +59,7 @@ class StreamManager:
         self._reconcile_task: asyncio.Task | None = None
 
         self._streams_per_connection = getattr(settings, "ws_streams_per_connection", 200)
-        self._open_price_candles: dict[tuple[str, str, str, str], dict[str, Any]] = {}
+        self._open_price_candles: dict[tuple[str, str, str, str, str], dict[str, Any]] = {}
 
     async def start(self) -> None:
         if self._supervisor_task and not self._supervisor_task.done():
@@ -162,7 +162,7 @@ class StreamManager:
                     for idx, worker in enumerate(workers, start=1)
                 ]
                 runtime_state.active_streams = [
-                    f"{item.exchange}:{item.market}:{item.symbol}:{item.interval}"
+                    f"{item.exchange}:{item.market}:{item.symbol}:{item.interval}:{item.price_basis}"
                     for worker in workers
                     for item in worker.subscriptions
                 ]
@@ -301,6 +301,7 @@ class StreamManager:
                     adapter=adapter,
                     exchange=subscriptions[0].exchange,
                     market=subscriptions[0].market,
+                    subscriptions=subscriptions,
                     raw_message=raw_message,
                 )
 
@@ -338,6 +339,7 @@ class StreamManager:
                         adapter=adapter,
                         exchange=subscriptions[0].exchange,
                         market=subscriptions[0].market,
+                        subscriptions=subscriptions,
                         raw_message=raw_message,
                     )
 
@@ -354,6 +356,10 @@ class StreamManager:
         grouped: dict[tuple[str, str, str], list[StreamSubscription]] = defaultdict(list)
 
         for item in items:
+            # Bybit's public linear kline topic is traded-price data. MARK pairs
+            # remain REST-backed and must never own this upstream subscription.
+            if item.exchange == "bybit" and item.market == "futures" and item.price_basis == "mark":
+                continue
             adapter = get_adapter(exchange=item.exchange, market=item.market)
             stream_key = adapter.build_stream_name(
                 symbol=item.symbol,
@@ -365,6 +371,7 @@ class StreamManager:
                     market=item.market,
                     symbol=item.symbol,
                     interval=item.interval,
+                    price_basis=item.price_basis,
                     stream_key=stream_key,
                 )
             )
@@ -376,12 +383,12 @@ class StreamManager:
                 market=market,
             )
             unique_by_key = {
-                (sub.exchange, sub.market, sub.symbol, sub.interval, sub.stream_key): sub
+                (sub.exchange, sub.market, sub.symbol, sub.interval, sub.price_basis, sub.stream_key): sub
                 for sub in subscriptions
             }
             unique_subscriptions = sorted(
                 unique_by_key.values(),
-                key=lambda item: (item.exchange, item.market, item.symbol, item.interval),
+                key=lambda item: (item.exchange, item.market, item.symbol, item.interval, item.price_basis),
             )
 
             if adapter.stream_transport == "websocket":
@@ -416,6 +423,7 @@ class StreamManager:
         adapter: ProviderAdapter,
         exchange: str,
         market: str,
+        subscriptions: list[StreamSubscription],
         raw_message: Any,
     ) -> None:
         runtime_state.ws_last_message_at = datetime.now(timezone.utc)
@@ -425,28 +433,46 @@ class StreamManager:
 
         message = adapter.parse_message(raw_message)
 
-        if exchange == "bybit" and market == "futures":
-            return
-
         if adapter.native_kline_stream:
             kline_event = adapter.extract_kline_event(message)
             if not kline_event:
                 return
-            runtime_state.last_kline_event = kline_event
-            await self._publish_native_kline(
-                exchange=exchange,
-                market=market,
-                symbol=str(kline_event["symbol"]).upper(),
-                interval=str(kline_event["interval"]),
-                event=kline_event,
-            )
+            symbol = str(kline_event["symbol"]).upper()
+            interval = str(kline_event["interval"])
+            matching_bases = {
+                item.price_basis
+                for item in subscriptions
+                if item.symbol.upper() == symbol and item.interval == interval
+            }
+            if exchange == "bybit" and market == "futures":
+                matching_bases &= {"trade"}
+            for price_basis in matching_bases:
+                event = {**kline_event, "price_basis": price_basis, "source": "ws"}
+                runtime_state.last_kline_event = {
+                    **event,
+                    "exchange": exchange,
+                    "market": market,
+                }
+                await self._publish_native_kline(
+                    exchange=exchange,
+                    market=market,
+                    symbol=symbol,
+                    interval=interval,
+                    price_basis=price_basis,
+                    event=event,
+                )
             return
 
         price_event = adapter.extract_price_event(message)
         if not price_event:
             return
 
-        runtime_state.last_kline_event = price_event
+        runtime_state.last_kline_event = {
+            **price_event,
+            "exchange": exchange,
+            "market": market,
+            "price_basis": "mid",
+        }
         await self._handle_price_event(
             exchange=exchange,
             symbol=str(price_event["symbol"]).upper(),
@@ -460,6 +486,7 @@ class StreamManager:
         market: str,
         symbol: str,
         interval: str,
+        price_basis: str,
         event: dict[str, Any],
     ) -> None:
         await CandleService.write_open_candle_to_redis(
@@ -467,6 +494,7 @@ class StreamManager:
             market=market,
             symbol=symbol,
             interval=interval,
+            price_basis=price_basis,
             event=event,
         )
 
@@ -475,6 +503,7 @@ class StreamManager:
             market=market,
             symbol=symbol,
             interval=interval,
+            price_basis=price_basis,
             event=event,
         )
 
@@ -486,6 +515,7 @@ class StreamManager:
                     market=market,
                     symbol=symbol,
                     interval=interval,
+                    price_basis=price_basis,
                     events=[event],
                 )
 
@@ -494,6 +524,7 @@ class StreamManager:
                 market=market,
                 symbol=symbol,
                 interval=interval,
+                price_basis=price_basis,
                 event=event,
             )
 
@@ -506,7 +537,8 @@ class StreamManager:
     ) -> None:
         market = await self._resolve_oanda_market(symbol)
         interval = "1m"
-        key = (exchange, market, symbol, interval)
+        price_basis = "mid"
+        key = (exchange, market, symbol, interval, price_basis)
         event_ts = int(price_event["timestamp_ms"])
         open_time = floor_to_interval_open(event_ts, interval)
         close_time = next_interval_open(open_time, interval) - 1
@@ -522,6 +554,7 @@ class StreamManager:
                 market=market,
                 symbol=symbol,
                 interval=interval,
+                price_basis=price_basis,
                 event=closed_event,
             )
             existing = None
@@ -540,6 +573,7 @@ class StreamManager:
                 "is_closed": False,
                 "trades_count": None,
                 "source": "ws",
+                "price_basis": price_basis,
             }
             self._open_price_candles[key] = existing
         else:
@@ -552,6 +586,7 @@ class StreamManager:
             market=market,
             symbol=symbol,
             interval=interval,
+            price_basis=price_basis,
             event=existing,
         )
         await self.realtime_service.publish_kline(
@@ -559,6 +594,7 @@ class StreamManager:
             market=market,
             symbol=symbol,
             interval=interval,
+            price_basis=price_basis,
             event=existing,
         )
 
@@ -569,6 +605,7 @@ class StreamManager:
         market: str,
         symbol: str,
         interval: str,
+        price_basis: str,
         event: dict[str, Any],
     ) -> None:
         await self.realtime_service.publish_kline(
@@ -576,6 +613,7 @@ class StreamManager:
             market=market,
             symbol=symbol,
             interval=interval,
+            price_basis=price_basis,
             event=event,
         )
 
@@ -586,6 +624,7 @@ class StreamManager:
                 market=market,
                 symbol=symbol,
                 interval=interval,
+                price_basis=price_basis,
                 events=[event],
             )
 
@@ -594,6 +633,7 @@ class StreamManager:
             market=market,
             symbol=symbol,
             interval=interval,
+            price_basis=price_basis,
             event=event,
         )
 
@@ -620,6 +660,7 @@ class StreamManager:
                             market=pair.market,
                             symbol=pair.symbol,
                             interval=pair.interval,
+                            price_basis=pair.price_basis,
                         )
                     except Exception:
                         logger.exception(

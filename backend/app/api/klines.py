@@ -19,6 +19,7 @@ from ..utils.intervals import (
     is_supported_interval,
     next_interval_open,
 )
+from ..price_basis import resolve_price_basis
 
 router = APIRouter(prefix="/api", tags=["api"])
 
@@ -92,6 +93,7 @@ async def get_klines(
     market: str = Query(...),
     symbol: str = Query(...),
     interval: str = Query(...),
+    price_basis: str | None = Query(default=None),
     from_ts: str | int | None = Query(default=None, alias="from"),
     to_ts: str | int | None = Query(default=None, alias="to"),
     limit: str | int | None = Query(default=500),
@@ -104,13 +106,21 @@ async def get_klines(
     to_ts = _parse_int_query(to_ts, field_name="to")
     limit = _parse_int_query(limit, field_name="limit", default=500, minimum=1, maximum=5000)
 
-    if not is_supported_interval(interval):
-        return KlineHistoryResponse(bars=[], noData=True)
-
     try:
         adapter = get_adapter(exchange=exchange, market=market)
     except ValueError:
-        return KlineHistoryResponse(bars=[], noData=True)
+        return KlineHistoryResponse(bars=[], price_basis=None, noData=True)
+    try:
+        resolved_price_basis = resolve_price_basis(
+            exchange=exchange,
+            market=market,
+            requested_price_basis=price_basis,
+        ).value
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    if not is_supported_interval(interval):
+        return KlineHistoryResponse(bars=[], price_basis=resolved_price_basis, noData=True)
     if exchange in {"bybit", "okx"}:
         try:
             symbol = await adapter.resolve_symbol(market=market, symbol=symbol)  # type: ignore[attr-defined]
@@ -139,7 +149,7 @@ async def get_klines(
         from_ts = floor_to_interval_open(from_ts, interval)
 
     if from_ts > to_ts:
-        return KlineHistoryResponse(bars=[], noData=True)
+        return KlineHistoryResponse(bars=[], price_basis=resolved_price_basis, noData=True)
 
     should_backfill = True
     preferred_history_interval = adapter.get_history_backfill_interval(interval)
@@ -151,6 +161,7 @@ async def get_klines(
             market=market,
             symbol=symbol,
             target_interval=interval,
+            price_basis=resolved_price_basis,
         )
         await db.rollback()
     except SQLAlchemyTimeoutError as exc:
@@ -180,6 +191,7 @@ async def get_klines(
             market=market,
             symbol=symbol,
             interval=tracking_interval,
+            price_basis=resolved_price_basis,
         )
     except OkxRateLimitError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
@@ -191,6 +203,7 @@ async def get_klines(
         market=market,
         symbol=symbol,
         interval=tracking_interval,
+        price_basis=resolved_price_basis,
     )
 
     source_from = floor_to_interval_open(from_ts, source_interval)
@@ -208,6 +221,7 @@ async def get_klines(
                 market=market,
                 symbol=symbol,
                 interval=source_interval,
+                price_basis=resolved_price_basis,
                 from_ts=source_from,
                 to_ts=source_to,
             )
@@ -223,6 +237,7 @@ async def get_klines(
             market=market,
             symbol=symbol,
             interval=interval,
+            price_basis=resolved_price_basis,
             from_ts=from_ts,
             to_ts=history_to_ts,
             limit=limit,
@@ -235,6 +250,7 @@ async def get_klines(
             symbol=symbol,
             source_interval=source_interval,
             target_interval=interval,
+            price_basis=resolved_price_basis,
             from_ts=from_ts,
             to_ts=history_to_ts,
             limit=limit,
@@ -248,6 +264,7 @@ async def get_klines(
                 market=market,
                 symbol=symbol,
                 interval=interval,
+                price_basis=resolved_price_basis,
                 current_open_ts=current_open_ts,
                 now_ms=now_ms,
             )
@@ -262,5 +279,6 @@ async def get_klines(
 
     return KlineHistoryResponse(
         bars=[KlineBarResponse(**bar) for bar in bars],
+        price_basis=resolved_price_basis,
         noData=len(bars) == 0,
     )

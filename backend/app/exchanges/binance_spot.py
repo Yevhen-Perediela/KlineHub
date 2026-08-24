@@ -8,6 +8,7 @@ import httpx
 
 from ..services.exchange_limit_service import record_http_error, record_http_response
 from .base import ProviderAdapter
+from ..price_basis import resolve_price_basis
 
 
 class InvalidSpotSymbolError(ValueError):
@@ -62,10 +63,14 @@ class BinanceSpotAdapter(ProviderAdapter):
         market: str,
         symbol: str,
         interval: str,
+        price_basis: str | None = None,
         start_time: int | None = None,
         end_time: int | None = None,
         limit: int | None = None,
     ) -> list[dict[str, Any]]:
+        basis = resolve_price_basis(
+            exchange="binance", market=market, requested_price_basis=price_basis
+        )
         symbol = symbol.upper()
 
         params: dict[str, Any] = {
@@ -125,6 +130,8 @@ class BinanceSpotAdapter(ProviderAdapter):
                     "volume": row[5],
                     "close_time": int(row[6]),
                     "is_closed": True,
+                    "source": "rest",
+                    "price_basis": basis.value,
                 }
             )
         return events

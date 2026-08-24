@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -12,6 +12,7 @@ from ..exchanges.oanda import InvalidOandaInstrumentError
 from ..exchanges.okx import InvalidOkxSymbolError, OkxRateLimitError
 from ..exchanges.registry import get_adapter
 from ..models import TrackedPair
+from ..price_basis import resolve_price_basis
 from ..schemas import (
     TrackedPairCreate,
     TrackedPairResponse,
@@ -30,6 +31,7 @@ async def list_pairs(db: AsyncSession = Depends(get_db)) -> TrackedPairListRespo
             TrackedPair.market,
             TrackedPair.symbol,
             TrackedPair.interval,
+            TrackedPair.price_basis,
         )
     )
     items = result.scalars().all()
@@ -49,6 +51,12 @@ async def create_pair(
     symbol = payload.symbol.upper()
     exchange = payload.exchange.lower()
     market = payload.market.lower()
+    try:
+        price_basis = resolve_price_basis(
+            exchange=exchange, market=market, requested_price_basis=payload.price_basis
+        ).value
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     if exchange in {"bybit", "okx"}:
         try:
             adapter = get_adapter(exchange=exchange, market=market)
@@ -64,6 +72,7 @@ async def create_pair(
             market=market,
             symbol=symbol,
             interval=payload.interval,
+            price_basis=price_basis,
         )
     except OkxRateLimitError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
@@ -76,6 +85,7 @@ async def create_pair(
             TrackedPair.market == market,
             TrackedPair.symbol == symbol,
             TrackedPair.interval == payload.interval,
+            TrackedPair.price_basis == price_basis,
         )
     )
     existing = existing_q.scalar_one_or_none()
@@ -96,6 +106,7 @@ async def create_pair(
                 market=market,
                 symbol=symbol,
                 interval=payload.interval,
+                price_basis=price_basis,
                 limit=payload.backfill_limit or settings.default_backfill_limit,
             )
         except OkxRateLimitError as exc:
@@ -108,6 +119,7 @@ async def create_pair(
         market=market,
         symbol=symbol,
         interval=payload.interval,
+        price_basis=price_basis,
         status="active",
         source=payload.source,
         priority=payload.priority,
@@ -124,6 +136,7 @@ async def create_pair(
             market=market,
             symbol=symbol,
             interval=payload.interval,
+            price_basis=price_basis,
             limit=payload.backfill_limit or settings.default_backfill_limit,
         )
     except OkxRateLimitError as exc:
@@ -143,9 +156,16 @@ async def delete_pair(
     symbol: str,
     interval: str,
     request: Request,
+    price_basis: str | None = Query(default=None),
     db: AsyncSession = Depends(get_db),
 ) -> DeletePairResponse:
     symbol = symbol.upper()
+    try:
+        resolved_basis = resolve_price_basis(
+            exchange=exchange, market=market, requested_price_basis=price_basis
+        ).value
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     existing_q = await db.execute(
         select(TrackedPair).where(
@@ -153,6 +173,7 @@ async def delete_pair(
             TrackedPair.market == market,
             TrackedPair.symbol == symbol,
             TrackedPair.interval == interval,
+            TrackedPair.price_basis == resolved_basis,
         )
     )
     existing = existing_q.scalar_one_or_none()
@@ -175,9 +196,16 @@ async def pause_pair(
     symbol: str,
     interval: str,
     request: Request,
+    price_basis: str | None = Query(default=None),
     db: AsyncSession = Depends(get_db),
 ) -> TrackedPairResponse:
     symbol = symbol.upper()
+    try:
+        resolved_basis = resolve_price_basis(
+            exchange=exchange, market=market, requested_price_basis=price_basis
+        ).value
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     result = await db.execute(
         select(TrackedPair).where(
@@ -185,6 +213,7 @@ async def pause_pair(
             TrackedPair.market == market,
             TrackedPair.symbol == symbol,
             TrackedPair.interval == interval,
+            TrackedPair.price_basis == resolved_basis,
         )
     )
     item = result.scalar_one_or_none()
@@ -210,9 +239,16 @@ async def resume_pair(
     symbol: str,
     interval: str,
     request: Request,
+    price_basis: str | None = Query(default=None),
     db: AsyncSession = Depends(get_db),
 ) -> TrackedPairResponse:
     symbol = symbol.upper()
+    try:
+        resolved_basis = resolve_price_basis(
+            exchange=exchange, market=market, requested_price_basis=price_basis
+        ).value
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
     result = await db.execute(
         select(TrackedPair).where(
@@ -220,6 +256,7 @@ async def resume_pair(
             TrackedPair.market == market,
             TrackedPair.symbol == symbol,
             TrackedPair.interval == interval,
+            TrackedPair.price_basis == resolved_basis,
         )
     )
     item = result.scalar_one_or_none()
@@ -239,6 +276,7 @@ async def resume_pair(
         market=market,
         symbol=symbol,
         interval=interval,
+        price_basis=resolved_basis,
     )
     await request.app.state.stream_manager.reload()
 

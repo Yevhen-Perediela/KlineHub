@@ -46,6 +46,7 @@ class FakeChartService:
                     market=item["market"].lower(),
                     symbol=item["symbol"].upper(),
                     interval=item["interval"],
+                    price_basis=item.get("price_basis", "trade"),
                 )
             )
         seen = set()
@@ -110,8 +111,8 @@ async def test_subscribe_single_stream_ack_and_registration():
 
     assert payload["type"] == "subscribed"
     assert payload["request_id"] == "r1"
-    assert payload["streams"][0]["channel"] == "kline:bybit:spot:BTCUSDT:1m"
-    assert service.realtime_service.subscribed == ["kline:bybit:spot:BTCUSDT:1m"]
+    assert payload["streams"][0]["channel"] == "kline:bybit:spot:BTCUSDT:1m:trade"
+    assert service.realtime_service.subscribed == ["kline:bybit:spot:BTCUSDT:1m:trade"]
 
 
 @pytest.mark.asyncio
@@ -126,8 +127,8 @@ async def test_subscribe_multiple_and_duplicate_is_idempotent():
     assert len(payload["streams"]) == 2
     assert len(session.subscriptions) == 2
     assert service.realtime_service.subscribed == [
-        "kline:bybit:spot:BTCUSDT:1m",
-        "kline:bybit:spot:ETHUSDT:1m",
+        "kline:bybit:spot:BTCUSDT:1m:trade",
+        "kline:bybit:spot:ETHUSDT:1m:trade",
     ]
 
 
@@ -156,10 +157,10 @@ async def test_atomic_switch_replaces_subscriptions():
 
     assert payload["type"] == "switched"
     assert payload["request_id"] == "r2"
-    assert StreamKey("bybit", "spot", "BTCUSDT", "1m") not in session.subscriptions
-    assert StreamKey("bybit", "spot", "ETHUSDT", "1m") in session.subscriptions
-    assert service.realtime_service.unsubscribed[-1] == "kline:bybit:spot:BTCUSDT:1m"
-    assert service.realtime_service.subscribed[-1] == "kline:bybit:spot:ETHUSDT:1m"
+    assert StreamKey("bybit", "spot", "BTCUSDT", "1m", "trade") not in session.subscriptions
+    assert StreamKey("bybit", "spot", "ETHUSDT", "1m", "trade") in session.subscriptions
+    assert service.realtime_service.unsubscribed[-1] == "kline:bybit:spot:BTCUSDT:1m:trade"
+    assert service.realtime_service.subscribed[-1] == "kline:bybit:spot:ETHUSDT:1m:trade"
 
 
 @pytest.mark.asyncio
@@ -184,7 +185,7 @@ async def test_invalid_switch_does_not_change_existing_subscriptions():
 @pytest.mark.asyncio
 async def test_snapshot_present_is_sent_after_ack_and_absent_is_silent():
     session, service, _ = make_session()
-    stream = StreamKey("bybit", "spot", "BTCUSDT", "1m")
+    stream = StreamKey("bybit", "spot", "BTCUSDT", "1m", "trade")
     service.active.add(stream)
     service.snapshot_by_stream[stream] = {"time": 1, "open": 1, "high": 2, "low": 1, "close": 2, "volume": 3}
 
@@ -208,7 +209,7 @@ async def test_cold_stream_sends_warming_up_and_ready():
 
     assert warming["type"] == "warming_up"
     assert ready["type"] == "stream_ready"
-    assert service.activated == [StreamKey("bybit", "spot", "BTCUSDT", "1m")]
+    assert service.activated == [StreamKey("bybit", "spot", "BTCUSDT", "1m", "trade")]
 
 
 @pytest.mark.asyncio
@@ -247,8 +248,8 @@ async def test_old_stream_update_is_dropped_after_switch():
         await asyncio.sleep(0.01)
 
         session.enqueue_kline(
-            channel="kline:bybit:spot:BTCUSDT:1m",
-            stream={"exchange": "bybit", "market": "spot", "symbol": "BTCUSDT", "interval": "1m"},
+            channel="kline:bybit:spot:BTCUSDT:1m:trade",
+            stream={"exchange": "bybit", "market": "spot", "symbol": "BTCUSDT", "interval": "1m", "price_basis": "trade"},
             event={"open_time": 1, "open": 1, "high": 1, "low": 1, "close": 1, "volume": 1},
         )
         await asyncio.sleep(0.01)
@@ -289,7 +290,7 @@ async def test_subscription_limit(monkeypatch):
 async def test_slow_consumer_queue_overflow_drops_kline(monkeypatch):
     monkeypatch.setattr("app.services.chart_ws_service.settings.chart_ws_outbound_queue_size", 1)
     session, _, _ = make_session()
-    stream = StreamKey("bybit", "spot", "BTCUSDT", "1m")
+    stream = StreamKey("bybit", "spot", "BTCUSDT", "1m", "trade")
     session.subscriptions.add(stream)
     await session._queue.put({"kind": "control", "payload": {"type": "blocked"}})
 
@@ -318,8 +319,39 @@ async def test_activation_single_flight():
         backfill_service=None,  # type: ignore[arg-type]
     )
     service.on_demand_tracking_service = OnDemand()
-    stream = StreamKey("bybit", "spot", "BTCUSDT", "1m")
+    stream = StreamKey("bybit", "spot", "BTCUSDT", "1m", "trade")
 
     await asyncio.gather(service.ensure_stream_active(stream), service.ensure_stream_active(stream))
 
     assert calls == 1
+
+
+@pytest.mark.asyncio
+async def test_normalize_bybit_futures_default_and_trade_channels(monkeypatch):
+    class Adapter:
+        async def resolve_symbol(self, *, market, symbol):
+            return symbol
+
+        async def validate_symbol(self, **kwargs):
+            return None
+
+    class Backfill:
+        async def validate_pair(self, **kwargs):
+            return None
+
+    monkeypatch.setattr("app.services.chart_ws_service.get_adapter", lambda **kwargs: Adapter())
+    service = ChartWebSocketService(
+        realtime_service=FakeRealtimeService(),  # type: ignore[arg-type]
+        session_factory=None,  # type: ignore[arg-type]
+        backfill_service=Backfill(),  # type: ignore[arg-type]
+    )
+    raw = {"exchange": "bybit", "market": "futures", "symbol": "BTCUSDT", "interval": "1d"}
+
+    mark = await service.normalize_stream(raw)
+    trade = await service.normalize_stream({**raw, "price_basis": "trade"})
+
+    assert mark.price_basis == "mark"
+    assert mark.channel.endswith(":mark")
+    assert trade.price_basis == "trade"
+    assert trade.channel.endswith(":trade")
+    assert mark != trade

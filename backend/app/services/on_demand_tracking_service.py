@@ -27,7 +27,7 @@ class OnDemandTrackingService:
         self._stop_event = asyncio.Event()
         self._task: asyncio.Task | None = None
         self._activation_lock = asyncio.Lock()
-        self._activation_tasks: dict[tuple[str, str, str, str], asyncio.Task[None]] = {}
+        self._activation_tasks: dict[tuple[str, str, str, str, str], asyncio.Task[None]] = {}
 
     async def start(self) -> None:
         if self._task and not self._task.done():
@@ -54,8 +54,9 @@ class OnDemandTrackingService:
         market: str,
         symbol: str,
         interval: str,
+        price_basis: str,
     ) -> None:
-        key = (exchange.lower(), market.lower(), symbol.upper(), interval)
+        key = (exchange.lower(), market.lower(), symbol.upper(), interval, price_basis)
         async with self._activation_lock:
             task = self._activation_tasks.get(key)
             if task is None or task.done():
@@ -65,6 +66,7 @@ class OnDemandTrackingService:
                         market=market.lower(),
                         symbol=symbol.upper(),
                         interval=interval,
+                        price_basis=price_basis,
                     )
                 )
                 self._activation_tasks[key] = task
@@ -83,6 +85,7 @@ class OnDemandTrackingService:
         market: str,
         symbol: str,
         interval: str,
+        price_basis: str,
     ) -> None:
         expires_at = self._new_expiration()
         reload_required = False
@@ -94,6 +97,7 @@ class OnDemandTrackingService:
                     TrackedPair.market == market,
                     TrackedPair.symbol == symbol.upper(),
                     TrackedPair.interval == interval,
+                    TrackedPair.price_basis == price_basis,
                 )
             )
             item = result.scalar_one_or_none()
@@ -104,6 +108,7 @@ class OnDemandTrackingService:
                     market=market,
                     symbol=symbol.upper(),
                     interval=interval,
+                    price_basis=price_basis,
                     status="active",
                     source=self.source,
                     priority=500,
@@ -112,11 +117,12 @@ class OnDemandTrackingService:
                 session.add(item)
                 reload_required = True
                 logger.info(
-                    "Created on-demand tracked pair %s %s %s %s until %s",
+                    "Created on-demand tracked pair %s %s %s %s %s until %s",
                     exchange,
                     market,
                     symbol,
                     interval,
+                    price_basis,
                     expires_at,
                 )
             elif item.status != "active":
@@ -126,11 +132,12 @@ class OnDemandTrackingService:
                 item.updated_at = datetime.utcnow()
                 reload_required = True
                 logger.info(
-                    "Activated on-demand tracked pair %s %s %s %s until %s",
+                    "Activated on-demand tracked pair %s %s %s %s %s until %s",
                     exchange,
                     market,
                     symbol,
                     interval,
+                    price_basis,
                     expires_at,
                 )
             elif item.source == self.source:

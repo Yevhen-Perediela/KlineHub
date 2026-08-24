@@ -18,6 +18,7 @@ from ..exchanges.oanda import InvalidOandaInstrumentError
 from ..exchanges.okx import InvalidOkxSymbolError
 from ..exchanges.registry import get_adapter, get_canonical_interval
 from ..models import TrackedPair
+from ..price_basis import resolve_price_basis
 from ..state import runtime_state
 from ..utils.intervals import is_supported_interval
 from .backfill_service import BackfillService
@@ -41,6 +42,7 @@ class StreamKey:
     market: str
     symbol: str
     interval: str
+    price_basis: str
 
     @property
     def channel(self) -> str:
@@ -49,6 +51,7 @@ class StreamKey:
             market=self.market,
             symbol=self.symbol,
             interval=self.interval,
+            price_basis=self.price_basis,
         )
 
     def as_dict(self) -> dict[str, str]:
@@ -57,6 +60,7 @@ class StreamKey:
             "market": self.market,
             "symbol": self.symbol,
             "interval": self.interval,
+            "price_basis": self.price_basis,
         }
 
     def as_response(self) -> dict[str, str]:
@@ -108,6 +112,7 @@ class ChartWebSocketService:
         market_raw = raw.get("market")
         symbol_raw = raw.get("symbol")
         interval_raw = raw.get("interval")
+        price_basis_raw = raw.get("price_basis")
 
         if not isinstance(exchange_raw, str) or not exchange_raw.strip():
             raise ChartProtocolError("INVALID_EXCHANGE", "exchange is required", details=raw)
@@ -122,6 +127,15 @@ class ChartWebSocketService:
         market = market_raw.lower().strip()
         symbol = symbol_raw.upper().strip()
         interval = interval_raw.strip()
+
+        try:
+            price_basis = resolve_price_basis(
+                exchange=exchange,
+                market=market,
+                requested_price_basis=price_basis_raw,
+            ).value
+        except ValueError as exc:
+            raise ChartProtocolError("INVALID_PRICE_BASIS", str(exc), details=raw) from exc
 
         if not is_supported_interval(interval):
             raise ChartProtocolError(
@@ -160,6 +174,7 @@ class ChartWebSocketService:
                 market=market,
                 symbol=symbol,
                 interval=canonical_interval,
+                price_basis=price_basis,
             )
         except INVALID_SYMBOL_ERRORS as exc:
             raise ChartProtocolError(
@@ -186,6 +201,7 @@ class ChartWebSocketService:
             market=market,
             symbol=symbol.upper(),
             interval=canonical_interval,
+            price_basis=price_basis,
         )
 
     async def normalize_streams(self, raw_streams: Any) -> list[StreamKey]:
@@ -220,6 +236,7 @@ class ChartWebSocketService:
                     TrackedPair.market == stream.market,
                     TrackedPair.symbol == stream.symbol,
                     TrackedPair.interval == stream.interval,
+                    TrackedPair.price_basis == stream.price_basis,
                     TrackedPair.status == "active",
                 )
             )
@@ -248,6 +265,7 @@ class ChartWebSocketService:
             market=stream.market,
             symbol=stream.symbol,
             interval=stream.interval,
+            price_basis=stream.price_basis,
         )
 
     async def get_snapshot(self, stream: StreamKey) -> dict[str, Any] | None:
@@ -256,6 +274,7 @@ class ChartWebSocketService:
             market=stream.market,
             symbol=stream.symbol,
             interval=stream.interval,
+            price_basis=stream.price_basis,
         )
 
 

@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
+from ..price_basis import resolve_price_basis
+
 router = APIRouter()
 
 
@@ -34,6 +36,7 @@ async def market_ws(websocket: WebSocket):
             market = data.get("market")
             symbol = data.get("symbol")
             interval = data.get("interval")
+            requested_price_basis = data.get("price_basis")
 
             if action not in {"subscribe", "unsubscribe"}:
                 await websocket.send_text(json.dumps({
@@ -49,6 +52,19 @@ async def market_ws(websocket: WebSocket):
                 }))
                 continue
 
+            try:
+                price_basis = resolve_price_basis(
+                    exchange=exchange,
+                    market=market,
+                    requested_price_basis=requested_price_basis,
+                ).value
+            except ValueError as exc:
+                await websocket.send_text(json.dumps({
+                    "type": "error",
+                    "message": str(exc),
+                }))
+                continue
+
             if action == "subscribe":
                 channel = await realtime_service.subscribe(
                     websocket,
@@ -56,10 +72,12 @@ async def market_ws(websocket: WebSocket):
                     market=market,
                     symbol=symbol,
                     interval=interval,
+                    price_basis=price_basis,
                 )
                 await websocket.send_text(json.dumps({
                     "type": "subscribed",
                     "channel": channel,
+                    "price_basis": price_basis,
                 }))
             else:
                 channel = await realtime_service.unsubscribe(
@@ -68,10 +86,12 @@ async def market_ws(websocket: WebSocket):
                     market=market,
                     symbol=symbol,
                     interval=interval,
+                    price_basis=price_basis,
                 )
                 await websocket.send_text(json.dumps({
                     "type": "unsubscribed",
                     "channel": channel,
+                    "price_basis": price_basis,
                 }))
 
     except WebSocketDisconnect:

@@ -13,20 +13,34 @@ from ..config import settings
 from ..models import Candle
 from ..redis_client import get_redis
 from ..state import runtime_state
+from ..price_basis import resolve_price_basis
 
 
 class CandleService:
     @staticmethod
-    def _open_key(exchange: str, market: str, symbol: str, interval: str) -> str:
-        return f"md:kline:open:{exchange}:{market}:{symbol}:{interval}"
+    def _open_key(exchange: str, market: str, symbol: str, interval: str, price_basis: str) -> str:
+        return f"md:kline:open:{exchange}:{market}:{symbol}:{interval}:{price_basis}"
 
     @staticmethod
-    def _last_key(exchange: str, market: str, symbol: str, interval: str) -> str:
-        return f"md:kline:last:{exchange}:{market}:{symbol}:{interval}"
+    def _last_key(exchange: str, market: str, symbol: str, interval: str, price_basis: str) -> str:
+        return f"md:kline:last:{exchange}:{market}:{symbol}:{interval}:{price_basis}"
 
     @staticmethod
-    def _recent_key(exchange: str, market: str, symbol: str, interval: str) -> str:
-        return f"md:kline:recent:{exchange}:{market}:{symbol}:{interval}"
+    def _recent_key(exchange: str, market: str, symbol: str, interval: str, price_basis: str) -> str:
+        return f"md:kline:recent:{exchange}:{market}:{symbol}:{interval}:{price_basis}"
+
+    @staticmethod
+    def _legacy_key(kind: str, exchange: str, market: str, symbol: str, interval: str) -> str:
+        return f"md:kline:{kind}:{exchange}:{market}:{symbol}:{interval}"
+
+    @staticmethod
+    def _assert_event_basis(events: list[dict], price_basis: str) -> None:
+        for event in events:
+            event_basis = event.get("price_basis")
+            if event_basis is not None and str(event_basis) != price_basis:
+                raise ValueError(
+                    f"Candle event price_basis={event_basis} does not match target={price_basis}"
+                )
 
     @classmethod
     async def write_open_candle_to_redis(
@@ -36,11 +50,13 @@ class CandleService:
         market: str,
         symbol: str,
         interval: str,
+        price_basis: str,
         event: dict,
     ) -> None:
         redis = get_redis()
         payload = json.dumps(event)
-        await redis.set(cls._open_key(exchange, market, symbol, interval), payload)
+        cls._assert_event_basis([event], price_basis)
+        await redis.set(cls._open_key(exchange, market, symbol, interval, price_basis), payload)
 
     @classmethod
     async def write_closed_candle_to_redis(
@@ -50,14 +66,16 @@ class CandleService:
         market: str,
         symbol: str,
         interval: str,
+        price_basis: str,
         event: dict,
     ) -> None:
         redis = get_redis()
         payload = json.dumps(event)
 
-        await redis.set(cls._last_key(exchange, market, symbol, interval), payload)
+        cls._assert_event_basis([event], price_basis)
+        await redis.set(cls._last_key(exchange, market, symbol, interval, price_basis), payload)
 
-        recent_key = cls._recent_key(exchange, market, symbol, interval)
+        recent_key = cls._recent_key(exchange, market, symbol, interval, price_basis)
         score = int(event["open_time"])
 
         await redis.zadd(recent_key, {payload: score})
@@ -76,13 +94,15 @@ class CandleService:
         market: str,
         symbol: str,
         interval: str,
+        price_basis: str,
         events: list[dict],
     ) -> None:
         if not events:
             return
 
+        cls._assert_event_basis(events, price_basis)
         redis = get_redis()
-        recent_key = cls._recent_key(exchange, market, symbol, interval)
+        recent_key = cls._recent_key(exchange, market, symbol, interval, price_basis)
 
         pipe = redis.pipeline()
 
@@ -94,7 +114,7 @@ class CandleService:
             pipe.zadd(recent_key, {payload: score})
 
         last_payload = json.dumps(sorted_events[-1])
-        pipe.set(cls._last_key(exchange, market, symbol, interval), last_payload)
+        pipe.set(cls._last_key(exchange, market, symbol, interval, price_basis), last_payload)
 
         await pipe.execute()
 
@@ -113,6 +133,7 @@ class CandleService:
         market: str,
         symbol: str,
         interval: str,
+        price_basis: str,
         event: dict,
     ) -> None:
         await cls.upsert_closed_candles(
@@ -121,6 +142,7 @@ class CandleService:
             market=market,
             symbol=symbol,
             interval=interval,
+            price_basis=price_basis,
             events=[event],
         )
 
@@ -133,11 +155,13 @@ class CandleService:
         market: str,
         symbol: str,
         interval: str,
+        price_basis: str,
         events: list[dict],
     ) -> None:
         if not events:
             return
 
+        cls._assert_event_basis(events, price_basis)
         values = []
         now = datetime.utcnow()
 
@@ -151,6 +175,7 @@ class CandleService:
                     "market": market,
                     "symbol": symbol,
                     "interval": interval,
+                    "price_basis": price_basis,
                     "open_time": int(event["open_time"]),
                     "close_time": int(event["close_time"]),
                     "open": Decimal(str(event["open"])),
@@ -171,7 +196,7 @@ class CandleService:
 
         stmt = insert(Candle).values(values)
         stmt = stmt.on_conflict_do_update(
-            index_elements=["exchange", "market", "symbol", "interval", "open_time"],
+            index_elements=["exchange", "market", "symbol", "interval", "price_basis", "open_time"],
             set_={
                 "close_time": stmt.excluded.close_time,
                 "open": stmt.excluded.open,
@@ -195,6 +220,7 @@ class CandleService:
             "market": market,
             "symbol": symbol,
             "interval": interval,
+            "price_basis": price_basis,
             "open_time": last_event["open_time"],
             "close_time": last_event["close_time"],
             "close": str(last_event["close"]),
@@ -211,6 +237,7 @@ class CandleService:
         market: str,
         symbol: str,
         interval: str,
+        price_basis: str,
     ) -> Candle | None:
         result = await db.execute(
             select(Candle).where(
@@ -218,6 +245,7 @@ class CandleService:
                 Candle.market == market,
                 Candle.symbol == symbol,
                 Candle.interval == interval,
+                Candle.price_basis == price_basis,
                 Candle.is_closed.is_(True),
             ).order_by(Candle.open_time.desc()).limit(1)
         )
@@ -231,9 +259,17 @@ class CandleService:
         market: str,
         symbol: str,
         interval: str,
+        price_basis: str,
     ) -> dict[str, Any] | None:
         redis = get_redis()
-        payload = await redis.get(cls._open_key(exchange, market, symbol, interval))
+        payload = await cls._get_with_legacy_default_fallback(
+            redis=redis,
+            canonical_key=cls._open_key(exchange, market, symbol, interval, price_basis),
+            legacy_key=cls._legacy_key("open", exchange, market, symbol, interval),
+            exchange=exchange,
+            market=market,
+            price_basis=price_basis,
+        )
         if not payload:
             return None
 
@@ -252,13 +288,22 @@ class CandleService:
         market: str,
         symbol: str,
         interval: str,
+        price_basis: str,
     ) -> dict[str, Any] | None:
         redis = get_redis()
         for key in (
-            cls._open_key(exchange, market, symbol, interval),
-            cls._last_key(exchange, market, symbol, interval),
+            (cls._open_key(exchange, market, symbol, interval, price_basis), "open"),
+            (cls._last_key(exchange, market, symbol, interval, price_basis), "last"),
         ):
-            payload = await redis.get(key)
+            canonical_key, kind = key
+            payload = await cls._get_with_legacy_default_fallback(
+                redis=redis,
+                canonical_key=canonical_key,
+                legacy_key=cls._legacy_key(kind, exchange, market, symbol, interval),
+                exchange=exchange,
+                market=market,
+                price_basis=price_basis,
+            )
             if not payload:
                 continue
             try:
@@ -271,6 +316,27 @@ class CandleService:
             if bar is not None:
                 return bar
         return None
+
+    @staticmethod
+    async def _get_with_legacy_default_fallback(
+        *,
+        redis,
+        canonical_key: str,
+        legacy_key: str,
+        exchange: str,
+        market: str,
+        price_basis: str,
+    ) -> str | None:
+        payload = await redis.get(canonical_key)
+        if payload:
+            return payload
+        default_basis = resolve_price_basis(exchange=exchange, market=market).value
+        if price_basis != default_basis:
+            return None
+        payload = await redis.get(legacy_key)
+        if payload:
+            await redis.set(canonical_key, payload)
+        return payload
 
     @staticmethod
     def _event_to_bar(event: dict[str, Any]) -> dict[str, Any] | None:

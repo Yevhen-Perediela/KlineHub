@@ -23,6 +23,7 @@ from .services.chart_ws_service import ChartWebSocketService
 from .services.stream_manager import StreamManager
 from .services.on_demand_tracking_service import OnDemandTrackingService
 from .state import runtime_state
+from .price_basis_migration import migrate_price_basis
 
 logging.basicConfig(
     level=logging.INFO,
@@ -54,11 +55,13 @@ chart_ws_service.on_demand_tracking_service = on_demand_tracking_service
 
 
 async def ensure_schema_upgrades() -> None:
-    async with engine.begin() as conn:
+    async with engine.connect() as conn:
         await conn.execute(text("ALTER TABLE tracked_pairs ADD COLUMN IF NOT EXISTS auto_stop_at TIMESTAMP NULL"))
         await conn.execute(
             text("CREATE INDEX IF NOT EXISTS ix_tracked_pairs_auto_stop_at ON tracked_pairs (auto_stop_at)")
         )
+        await conn.commit()
+        await migrate_price_basis(conn)
 
 
 @asynccontextmanager

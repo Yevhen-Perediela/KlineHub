@@ -10,6 +10,7 @@ class StreamSubscription:
     market: str
     symbol: str
     interval: str
+    price_basis: str
     stream_key: str
 
 
@@ -46,6 +47,7 @@ class ProviderAdapter:
         market: str,
         symbol: str,
         interval: str,
+        price_basis: str | None = None,
         start_time: int | None = None,
         end_time: int | None = None,
         limit: int | None = None,

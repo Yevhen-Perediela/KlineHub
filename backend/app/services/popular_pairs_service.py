@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from ..config import settings
 from ..exchanges.registry import get_adapter
 from ..models import TrackedPair
+from ..price_basis import resolve_price_basis
 from ..schemas import (
     RefreshPopularPairsGroupSummary,
     RefreshPopularPairsItem,
@@ -30,6 +31,7 @@ class PairKey:
     market: str
     symbol: str
     interval: str
+    price_basis: str
 
 
 @dataclass(frozen=True)
@@ -109,8 +111,11 @@ class PopularPairsService:
                     market=item.market,
                     symbol=item.symbol,
                     interval=item.interval,
+                    price_basis=item.price_basis,
                 ): item
                 for item in current_items
+                if item.price_basis
+                == resolve_price_basis(exchange=item.exchange, market=item.market).value
             }
 
             diff = self._build_diff(
@@ -245,6 +250,7 @@ class PopularPairsService:
                             market=market,
                             symbol=symbol,
                             interval=interval,
+                            price_basis=resolve_price_basis(exchange=exchange, market=market).value,
                         ),
                         group=group,
                         reason=f"cmc top base {base.base} rank={base.rank}",
@@ -283,6 +289,7 @@ class PopularPairsService:
                         market=market,
                         symbol=normalized_symbol,
                         interval=interval,
+                        price_basis=resolve_price_basis(exchange="oanda", market=market).value,
                     ),
                     group=f"oanda_{market}",
                     reason="curated validated OANDA instrument",
@@ -497,12 +504,14 @@ class PopularPairsService:
                         market=item.key.market,
                         symbol=item.key.symbol,
                         interval=item.key.interval,
+                        price_basis=item.key.price_basis,
                     )
                     row = TrackedPair(
                         exchange=item.key.exchange,
                         market=item.key.market,
                         symbol=item.key.symbol,
                         interval=item.key.interval,
+                        price_basis=item.key.price_basis,
                         status="active",
                         source="popular_refresh",
                         priority=100,
@@ -514,6 +523,7 @@ class PopularPairsService:
                         market=item.key.market,
                         symbol=item.key.symbol,
                         interval=item.key.interval,
+                        price_basis=item.key.price_basis,
                         limit=settings.default_backfill_limit,
                     )
                 applied_changes += 1
@@ -530,6 +540,7 @@ class PopularPairsService:
                     market=item.key.market,
                     symbol=item.key.symbol,
                     interval=item.key.interval,
+                    price_basis=item.key.price_basis,
                 )
                 row.status = "active"
                 row.updated_at = datetime.utcnow()
@@ -586,13 +597,13 @@ class PopularPairsService:
 
         if failures:
             failed_keys = {
-                (item.exchange, item.market, item.symbol, item.interval, item.action)
+                (item.exchange, item.market, item.symbol, item.interval, item.price_basis, item.action)
                 for item in failures
             }
-            added = [item for item in added if (item.exchange, item.market, item.symbol, item.interval, item.action) not in failed_keys]
-            resumed = [item for item in resumed if (item.exchange, item.market, item.symbol, item.interval, item.action) not in failed_keys]
-            paused = [item for item in paused if (item.exchange, item.market, item.symbol, item.interval, item.action) not in failed_keys]
-            deleted = [item for item in deleted if (item.exchange, item.market, item.symbol, item.interval, item.action) not in failed_keys]
+            added = [item for item in added if (item.exchange, item.market, item.symbol, item.interval, item.price_basis, item.action) not in failed_keys]
+            resumed = [item for item in resumed if (item.exchange, item.market, item.symbol, item.interval, item.price_basis, item.action) not in failed_keys]
+            paused = [item for item in paused if (item.exchange, item.market, item.symbol, item.interval, item.price_basis, item.action) not in failed_keys]
+            deleted = [item for item in deleted if (item.exchange, item.market, item.symbol, item.interval, item.price_basis, item.action) not in failed_keys]
 
         groups: dict[str, RefreshPopularPairsGroupSummary] = {}
         for desired in desired_pairs.values():
@@ -638,6 +649,7 @@ class PopularPairsService:
             market=item.key.market,
             symbol=item.key.symbol,
             interval=item.key.interval,
+            price_basis=item.key.price_basis,
             action=action,
             reason=item.reason,
             group=item.group,
@@ -655,6 +667,7 @@ class PopularPairsService:
             market=item.key.market,
             symbol=item.key.symbol,
             interval=item.key.interval,
+            price_basis=item.key.price_basis,
             action=action,
             reason=item.reason,
             error=str(error),

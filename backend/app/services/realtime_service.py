@@ -29,8 +29,9 @@ class RealtimeService:
         market: str,
         symbol: str,
         interval: str,
+        price_basis: str,
     ) -> str:
-        return f"kline:{exchange}:{market}:{symbol.upper()}:{interval}"
+        return f"kline:{exchange}:{market}:{symbol.upper()}:{interval}:{price_basis}"
 
     async def connect(self, websocket: WebSocket) -> None:
         await websocket.accept()
@@ -63,12 +64,14 @@ class RealtimeService:
         market: str,
         symbol: str,
         interval: str,
+        price_basis: str,
     ) -> str:
         channel = self.make_channel(
             exchange=exchange,
             market=market,
             symbol=symbol,
             interval=interval,
+            price_basis=price_basis,
         )
 
         async with self._lock:
@@ -88,12 +91,14 @@ class RealtimeService:
         market: str,
         symbol: str,
         interval: str,
+        price_basis: str,
     ) -> str:
         channel = self.make_channel(
             exchange=exchange,
             market=market,
             symbol=symbol,
             interval=interval,
+            price_basis=price_basis,
         )
 
         async with self._lock:
@@ -122,6 +127,7 @@ class RealtimeService:
         market: str,
         symbol: str,
         interval: str,
+        price_basis: str,
         event: dict[str, Any],
     ) -> None:
         channel = self.make_channel(
@@ -129,6 +135,7 @@ class RealtimeService:
             market=market,
             symbol=symbol,
             interval=interval,
+            price_basis=price_basis,
         )
 
         async with self._lock:
@@ -145,6 +152,7 @@ class RealtimeService:
             "market": market,
             "symbol": symbol.upper(),
             "interval": interval,
+            "price_basis": price_basis,
             "is_closed": bool(event["is_closed"]),
             "bar": {
                 "time": int(event["open_time"]),
@@ -175,6 +183,7 @@ class RealtimeService:
                     "market": market,
                     "symbol": symbol.upper(),
                     "interval": interval,
+                    "price_basis": price_basis,
                 },
                 event=event,
             )

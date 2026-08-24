@@ -12,6 +12,7 @@ from ..services.exchange_limit_service import record_http_error, record_http_res
 from ..state import runtime_state
 from ..utils.intervals import latest_closed_open_time
 from .base import ProviderAdapter
+from ..price_basis import resolve_price_basis
 
 
 class BinanceFuturesAdapter(ProviderAdapter):
@@ -68,10 +69,14 @@ class BinanceFuturesAdapter(ProviderAdapter):
         market: str,
         symbol: str,
         interval: str,
+        price_basis: str | None = None,
         limit: int = 300,
         start_time: int | None = None,
         end_time: int | None = None,
     ) -> list[dict[str, Any]]:
+        basis = resolve_price_basis(
+            exchange="binance", market=market, requested_price_basis=price_basis
+        )
         params: dict[str, Any] = {
             "symbol": symbol.upper(),
             "interval": interval,
@@ -135,6 +140,8 @@ class BinanceFuturesAdapter(ProviderAdapter):
                     "is_closed": True,
                     "trades_count": int(item[8]) if item[8] is not None else None,
                     "stream": None,
+                    "source": "rest",
+                    "price_basis": basis.value,
                 }
             )
 

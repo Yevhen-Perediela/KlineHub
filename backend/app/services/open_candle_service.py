@@ -32,15 +32,19 @@ class OpenCandleService:
         market: str,
         symbol: str,
         interval: str,
+        price_basis: str,
         current_open_ts: int,
         now_ms: int,
     ) -> dict[str, float | int] | None:
-        if not (exchange == "bybit" and market == "futures"):
+        # Legacy Bybit futures MARK opens remain REST-backed. TRADE opens may
+        # use the native traded-price kline stream cache.
+        if not (exchange == "bybit" and market == "futures" and price_basis == "mark"):
             open_bar = await cls._get_exact_redis_open_bar(
                 exchange=exchange,
                 market=market,
                 symbol=symbol,
                 interval=interval,
+                price_basis=price_basis,
                 current_open_ts=current_open_ts,
             )
             if open_bar is not None:
@@ -53,6 +57,7 @@ class OpenCandleService:
                 market=market,
                 symbol=symbol,
                 interval=interval,
+                price_basis=price_basis,
                 current_open_ts=current_open_ts,
                 now_ms=now_ms,
             )
@@ -64,6 +69,7 @@ class OpenCandleService:
             market=market,
             symbol=symbol,
             interval=interval,
+            price_basis=price_basis,
             current_open_ts=current_open_ts,
             now_ms=now_ms,
         )
@@ -75,6 +81,7 @@ class OpenCandleService:
         market: str,
         symbol: str,
         interval: str,
+        price_basis: str,
         current_open_ts: int,
     ) -> dict[str, float | int] | None:
         open_bar = await CandleService.get_open_candle(
@@ -82,6 +89,7 @@ class OpenCandleService:
             market=market,
             symbol=symbol,
             interval=interval,
+            price_basis=price_basis,
         )
         if open_bar is None or int(open_bar["time"]) != current_open_ts:
             return None
@@ -96,6 +104,7 @@ class OpenCandleService:
         market: str,
         symbol: str,
         interval: str,
+        price_basis: str,
         current_open_ts: int,
         now_ms: int,
     ) -> dict[str, float | int] | None:
@@ -109,6 +118,7 @@ class OpenCandleService:
             market=market,
             symbol=symbol,
             source_interval="1m",
+            price_basis=price_basis,
             from_ts=current_open_ts,
             to_ts=latest_closed_1m,
         )
@@ -119,6 +129,7 @@ class OpenCandleService:
             market=market,
             symbol=symbol,
             interval="1m",
+            price_basis=price_basis,
             current_open_ts=current_1m_open,
         )
         if redis_1m_open is not None and redis_1m_open["time"] >= current_open_ts:
@@ -140,6 +151,7 @@ class OpenCandleService:
         market: str,
         symbol: str,
         source_interval: str,
+        price_basis: str,
         from_ts: int,
         to_ts: int,
     ) -> list[dict[str, float | int]]:
@@ -153,6 +165,7 @@ class OpenCandleService:
                 Candle.market == market,
                 Candle.symbol == symbol.upper(),
                 Candle.interval == source_interval,
+                Candle.price_basis == price_basis,
                 Candle.open_time >= from_ts,
                 Candle.open_time <= to_ts,
                 Candle.is_closed.is_(True),
@@ -195,6 +208,7 @@ class OpenCandleService:
         market: str,
         symbol: str,
         interval: str,
+        price_basis: str,
         current_open_ts: int,
         now_ms: int,
     ) -> dict[str, float | int] | None:
@@ -203,6 +217,7 @@ class OpenCandleService:
                 return await cls._get_oanda_rest_aggregated_open_bar(
                     market=market,
                     symbol=symbol,
+                    price_basis=price_basis,
                     current_open_ts=current_open_ts,
                     now_ms=now_ms,
                 )
@@ -224,6 +239,7 @@ class OpenCandleService:
                     market=market,
                     symbol=symbol,
                     source_interval="1d",
+                    price_basis=price_basis,
                     target_interval=interval,
                     current_open_ts=current_open_ts,
                     now_ms=now_ms,
@@ -234,6 +250,7 @@ class OpenCandleService:
                     market=market,
                     symbol=symbol,
                     interval=interval,
+                    price_basis=price_basis,
                     start_time=current_open_ts,
                     end_time=min(now_ms, next_interval_open(current_open_ts, interval) - 1),
                     limit=2,
@@ -260,6 +277,7 @@ class OpenCandleService:
         *,
         market: str,
         symbol: str,
+        price_basis: str,
         current_open_ts: int,
         now_ms: int,
     ) -> dict[str, float | int] | None:
@@ -268,6 +286,7 @@ class OpenCandleService:
             market=market,
             symbol=symbol,
             interval="1m",
+            price_basis=price_basis,
             start_time=current_open_ts,
             end_time=min(now_ms, next_interval_open(current_open_ts, "3d") - 1),
             limit=None,
@@ -289,6 +308,7 @@ class OpenCandleService:
         market: str,
         symbol: str,
         source_interval: str,
+        price_basis: str,
         target_interval: str,
         current_open_ts: int,
         now_ms: int,
@@ -298,6 +318,7 @@ class OpenCandleService:
             market=market,
             symbol=symbol,
             interval=source_interval,
+            price_basis=price_basis,
             start_time=current_open_ts,
             end_time=min(now_ms, next_interval_open(current_open_ts, target_interval) - 1),
             limit=1000,

@@ -68,6 +68,7 @@ type TrackedPair = {
   market: string;
   symbol: string;
   interval: string;
+  price_basis: "trade" | "mark" | "mid";
   status: string;
   source: string;
   priority: number;
@@ -133,6 +134,7 @@ type OperationalOps = {
     market: string;
     symbol: string;
     interval: string;
+    price_basis: "trade" | "mark" | "mid";
     status: string;
     source: string;
     last_closed_open_time?: number | null;
@@ -437,7 +439,7 @@ export default function KlineHubMonitorDashboard() {
     const q = search.trim().toLowerCase();
     if (!q) return pairs;
     return pairs.filter((pair) =>
-      [pair.symbol, pair.exchange, pair.market, pair.interval, pair.status]
+      [pair.symbol, pair.exchange, pair.market, pair.interval, pair.price_basis, pair.status]
         .join(" ")
         .toLowerCase()
         .includes(q)
@@ -484,10 +486,11 @@ export default function KlineHubMonitorDashboard() {
     setError("");
     try {
       const base = `/internal/pairs/${pair.exchange}/${pair.market}/${pair.symbol}/${pair.interval}`;
+      const basisQuery = `?price_basis=${encodeURIComponent(pair.price_basis)}`;
       if (action === "delete") {
-        await fetchJson(base, { method: "DELETE" });
+        await fetchJson(`${base}${basisQuery}`, { method: "DELETE" });
       } else {
-        await fetchJson(`${base}/${action}`, { method: "POST" });
+        await fetchJson(`${base}/${action}${basisQuery}`, { method: "POST" });
       }
       await loadAll();
     } catch (err) {
@@ -826,13 +829,13 @@ export default function KlineHubMonitorDashboard() {
                   </thead>
                   <tbody>
                     {filteredPairs.map((pair) => (
-                      <tr key={`${pair.exchange}-${pair.market}-${pair.symbol}-${pair.interval}`} className="border-b border-white/5 text-slate-200 transition hover:bg-white/[0.03]">
+                      <tr key={`${pair.exchange}-${pair.market}-${pair.symbol}-${pair.interval}-${pair.price_basis}`} className="border-b border-white/5 text-slate-200 transition hover:bg-white/[0.03]">
                         <td className="px-4 py-3">
                           <div className="font-semibold text-white">{pair.symbol}</div>
                           <div className="text-xs text-slate-500">#{pair.id}</div>
                         </td>
                         <td className="px-4 py-3 text-slate-300">{pair.exchange} / {pair.market}</td>
-                        <td className="px-4 py-3 text-slate-300">{pair.interval}</td>
+                        <td className="px-4 py-3 text-slate-300">{pair.interval} · {pair.price_basis}</td>
                         <td className="px-4 py-3">
                           <span className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-medium ${pair.status === "active" ? statusPill(true) : "border-amber-400/20 bg-amber-500/15 text-amber-200"}`}>
                             {pair.status}

@@ -9,6 +9,7 @@ import httpx
 from ..config import settings
 from ..services.exchange_limit_service import record_http_error, record_http_response
 from ..utils.intervals import latest_closed_open_time, next_interval_open
+from ..price_basis import PriceBasis, resolve_price_basis
 from .base import ProviderAdapter
 
 
@@ -107,10 +108,16 @@ class BybitAdapter(ProviderAdapter):
         market: str,
         symbol: str,
         interval: str,
+        price_basis: str | None = None,
         start_time: int | None = None,
         end_time: int | None = None,
         limit: int | None = None,
     ) -> list[dict[str, Any]]:
+        basis = resolve_price_basis(
+            exchange="bybit",
+            market=market,
+            requested_price_basis=price_basis,
+        )
         category = self._market_to_category(market)
         symbol = await self.resolve_symbol(market=market, symbol=symbol)
         params: dict[str, Any] = {
@@ -124,7 +131,7 @@ class BybitAdapter(ProviderAdapter):
         if end_time is not None:
             params["end"] = int(end_time)
 
-        is_mark_price = market.lower() == "futures"
+        is_mark_price = basis is PriceBasis.MARK
         endpoint = "mark-price-kline" if is_mark_price else "kline"
 
         async with httpx.AsyncClient(timeout=30.0) as client:
@@ -169,7 +176,8 @@ class BybitAdapter(ProviderAdapter):
                     "volume": volume,
                     "turnover": turnover,
                     "is_closed": open_time <= latest_closed_open,
-                    "source": "bybit_mark" if is_mark_price else "rest",
+                    "source": "rest",
+                    "price_basis": basis.value,
                 }
             )
 

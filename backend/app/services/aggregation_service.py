@@ -24,11 +24,13 @@ class AggregationService:
         exchange: str,
         market: str,
         symbol: str,
+        price_basis: str,
     ) -> list[str]:
         stmt = select(distinct(Candle.interval)).where(
             Candle.exchange == exchange,
             Candle.market == market,
             Candle.symbol == symbol.upper(),
+            Candle.price_basis == price_basis,
             Candle.is_closed.is_(True),
         )
         result = await db.execute(stmt)
@@ -48,12 +50,14 @@ class AggregationService:
         market: str,
         symbol: str,
         target_interval: str,
+        price_basis: str,
     ) -> str | None:
         available = await cls.get_available_intervals(
             db=db,
             exchange=exchange,
             market=market,
             symbol=symbol,
+            price_basis=price_basis,
         )
 
         candidates = [
@@ -73,6 +77,7 @@ class AggregationService:
         market: str,
         symbol: str,
         interval: str,
+        price_basis: str,
         from_ts: int | None,
         to_ts: int | None,
         limit: int,
@@ -82,6 +87,7 @@ class AggregationService:
             Candle.market == market,
             Candle.symbol == symbol.upper(),
             Candle.interval == interval,
+            Candle.price_basis == price_basis,
             Candle.is_closed.is_(True),
         )
 
@@ -117,6 +123,7 @@ class AggregationService:
         symbol: str,
         source_interval: str,
         target_interval: str,
+        price_basis: str,
         from_ts: int | None,
         to_ts: int | None,
         limit: int,
@@ -131,6 +138,7 @@ class AggregationService:
             Candle.market == market,
             Candle.symbol == symbol.upper(),
             Candle.interval == source_interval,
+            Candle.price_basis == price_basis,
             Candle.is_closed.is_(True),
         )
 

@@ -8,6 +8,7 @@ from sqlalchemy import (
     BigInteger,
     Numeric,
     Boolean,
+    CheckConstraint,
     UniqueConstraint,
     Index,
 )
@@ -19,12 +20,17 @@ from .db import Base
 class TrackedPair(Base):
     __tablename__ = "tracked_pairs"
     __table_args__ = (
+        CheckConstraint(
+            "price_basis IN ('trade', 'mark', 'mid')",
+            name="ck_tracked_pairs_price_basis",
+        ),
         UniqueConstraint(
             "exchange",
             "market",
             "symbol",
             "interval",
-            name="uq_tracked_pair_exchange_market_symbol_interval",
+            "price_basis",
+            name="uq_tracked_pair_exchange_market_symbol_interval_price_basis",
         ),
     )
 
@@ -34,6 +40,7 @@ class TrackedPair(Base):
     market: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
     symbol: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
     interval: Mapped[str] = mapped_column(String(16), nullable=False, default="1h")
+    price_basis: Mapped[str] = mapped_column(String(16), nullable=False, index=True)
 
     status: Mapped[str] = mapped_column(String(16), nullable=False, default="active", index=True)
     source: Mapped[str] = mapped_column(String(32), nullable=False, default="api")
@@ -52,13 +59,18 @@ class TrackedPair(Base):
 class Candle(Base):
     __tablename__ = "candles"
     __table_args__ = (
+        CheckConstraint(
+            "price_basis IN ('trade', 'mark', 'mid')",
+            name="ck_candles_price_basis",
+        ),
         UniqueConstraint(
             "exchange",
             "market",
             "symbol",
             "interval",
+            "price_basis",
             "open_time",
-            name="uq_candle_exchange_market_symbol_interval_open_time",
+            name="uq_candle_exchange_market_symbol_interval_price_basis_open_time",
         ),
         Index(
             "ix_candle_lookup",
@@ -66,6 +78,7 @@ class Candle(Base):
             "market",
             "symbol",
             "interval",
+            "price_basis",
             "open_time",
         ),
         Index(
@@ -74,6 +87,7 @@ class Candle(Base):
             "market",
             "symbol",
             "interval",
+            "price_basis",
             "open_time",
         ),
     )
@@ -84,6 +98,7 @@ class Candle(Base):
     market: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
     symbol: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
     interval: Mapped[str] = mapped_column(String(16), nullable=False, index=True)
+    price_basis: Mapped[str] = mapped_column(String(16), nullable=False, index=True)
 
     open_time: Mapped[int] = mapped_column(BigInteger, nullable=False, index=True)
     close_time: Mapped[int] = mapped_column(BigInteger, nullable=False)

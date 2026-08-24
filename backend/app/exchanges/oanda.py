@@ -10,6 +10,7 @@ import httpx
 from ..config import settings
 from ..services.exchange_limit_service import record_http_error, record_http_response
 from .base import ProviderAdapter
+from ..price_basis import resolve_price_basis
 
 
 class OandaConfigurationError(RuntimeError):
@@ -106,10 +107,14 @@ class OandaAdapter(ProviderAdapter):
         market: str,
         symbol: str,
         interval: str,
+        price_basis: str | None = None,
         start_time: int | None = None,
         end_time: int | None = None,
         limit: int | None = None,
     ) -> list[dict[str, Any]]:
+        basis = resolve_price_basis(
+            exchange="oanda", market=market, requested_price_basis=price_basis
+        )
         self._assert_configured()
 
         if interval not in self.GRANULARITY_MAP:
@@ -173,6 +178,7 @@ class OandaAdapter(ProviderAdapter):
                     "trades_count": None,
                     "stream": None,
                     "source": "rest",
+                    "price_basis": basis.value,
                 }
             )
 

@@ -217,6 +217,7 @@ GET /api/klines
 | `market` | string | Yes | Market identifier for the exchange |
 | `symbol` | string | Yes | Instrument symbol |
 | `interval` | string | Yes | Requested normalized interval |
+| `price_basis` | `trade`, `mark`, `mid` | No | Explicit candle basis; omitted uses the compatibility default below |
 | `from` | integer ms | No | Start timestamp in Unix milliseconds |
 | `to` | integer ms | No | End timestamp in Unix milliseconds |
 | `limit` | integer | No | Maximum number of returned bars, `1..5000`, default `500` |
@@ -232,6 +233,7 @@ GET /api/klines
 - If `from` is omitted, the API calculates a backward window based on `limit`.
 - Closed historical candles are served from PostgreSQL.
 - Missing historical ranges are backfilled from the provider and stored.
+- The resolved basis is returned once at response level as `price_basis`.
 - If the requested pair is not actively tracked, KlineHub creates or resumes an `on_demand` tracked pair for a limited time.
 - On-demand tracking is extended on repeated requests and is paused automatically after `ON_DEMAND_TRACKING_TTL_DAYS`.
 - Auto-pausing an on-demand pair stops live streaming only; stored candles remain in PostgreSQL and Redis.
@@ -240,7 +242,7 @@ GET /api/klines
 #### Aggregation behavior
 
 - Binance, Bybit, and OKX can provide direct native intervals for backfill where the provider adapter supports the requested interval.
-- Bybit futures backfill reads mark-price candles from `/v5/market/mark-price-kline`.
+- Bybit futures MARK backfill reads `/v5/market/mark-price-kline`; TRADE backfill reads `/v5/market/kline?category=linear`.
 - Bybit spot backfill reads trade candles from `/v5/market/kline`.
 - OKX backfill reads candles from `/api/v5/market/history-candles`; recent/open candles may read from `/api/v5/market/candles`.
 - OANDA stores canonical `1m` candles and higher intervals are aggregated from them.
@@ -260,6 +262,7 @@ GET /api/klines
       "volume": 60.691
     }
   ],
+  "price_basis": "mark",
   "noData": false
 }
 ```
@@ -269,7 +272,29 @@ GET /api/klines
 | Field | Type | Description |
 | --- | --- | --- |
 | `bars` | array | Array of normalized candle objects |
+| `price_basis` | string | Resolved basis for every bar in the response |
 | `noData` | boolean | `true` when no candles are available |
+
+#### Price basis defaults and validation
+
+| Exchange | Market | Omitted | Explicitly supported |
+| --- | --- | --- | --- |
+| Bybit | spot | `trade` | `trade` |
+| Bybit | futures | `mark` | `mark`, `trade` |
+| OKX | spot, futures | `trade` | `trade` |
+| Binance | spot, futures | `trade` | `trade` |
+| OANDA | forex, metals, stocks | `mid` | `mid` |
+
+Unsupported explicit combinations return `400`; they never fall back silently. Existing Bybit futures requests that omit `price_basis` remain MARK requests.
+
+```bash
+# Legacy and explicit MARK are equivalent
+curl "http://127.0.0.1:8088/api/klines?exchange=bybit&market=futures&symbol=BTCUSDT&interval=1d"
+curl "http://127.0.0.1:8088/api/klines?exchange=bybit&market=futures&symbol=BTCUSDT&interval=1d&price_basis=mark"
+
+# Independent traded-price series
+curl "http://127.0.0.1:8088/api/klines?exchange=bybit&market=futures&symbol=BTCUSDT&interval=1d&price_basis=trade"
+```
 
 #### Example: Binance futures
 
@@ -451,6 +476,7 @@ GET /internal/pairs
       "market": "futures",
       "symbol": "BTCUSDT",
       "interval": "1h",
+      "price_basis": "mark",
       "status": "active",
       "source": "api",
       "priority": 100,
@@ -489,6 +515,7 @@ Content-Type: application/json
 | `market` | string | Yes | - | Exchange market |
 | `symbol` | string | Yes | - | Instrument symbol; Bybit accepts canonical symbol or matching `displayName` alias |
 | `interval` | string | No | `1h` | Tracked interval |
+| `price_basis` | string or null | No | Provider/market default | `trade`, `mark`, or `mid`; unsupported combinations return `400` |
 | `source` | string | No | `api` | Source marker for bookkeeping |
 | `priority` | integer | No | `100` | Internal priority field |
 | `auto_stop_at` | datetime or null | No | `null` | Auto-pause time for on-demand tracked pairs |
@@ -763,6 +790,7 @@ After connect, the server immediately sends:
 | `market` | string | Yes | Market identifier |
 | `symbol` | string | Yes | Symbol |
 | `interval` | string | Yes | Interval |
+| `price_basis` | string | No | Resolved with the same defaults as `/api/klines` |
 
 #### Subscribe example
 
@@ -772,7 +800,8 @@ After connect, the server immediately sends:
   "exchange": "bybit",
   "market": "spot",
   "symbol": "BTCUSDT",
-  "interval": "1h"
+  "interval": "1h",
+  "price_basis": "trade"
 }
 ```
 
@@ -793,7 +822,8 @@ After connect, the server immediately sends:
 ```json
 {
   "type": "subscribed",
-  "channel": "kline:bybit:spot:BTCUSDT:1h"
+  "channel": "kline:bybit:spot:BTCUSDT:1h:trade",
+  "price_basis": "trade"
 }
 ```
 
@@ -802,7 +832,8 @@ After connect, the server immediately sends:
 ```json
 {
   "type": "unsubscribed",
-  "channel": "kline:bybit:spot:BTCUSDT:1h"
+  "channel": "kline:bybit:spot:BTCUSDT:1h:trade",
+  "price_basis": "trade"
 }
 ```
 
@@ -849,11 +880,11 @@ Then send:
 
 #### Bybit realtime note
 
-Bybit `spot` publishes native kline events through this WebSocket path. Bybit `futures` history is currently stored from mark-price REST candles, and futures WebSocket kline messages are ignored by the stream manager to avoid mixing mark-price history with trade-price live candles.
+Bybit spot TRADE and Bybit futures TRADE use native kline events. Bybit futures MARK remains REST-backed and is never updated from the public linear `kline.*` topic. A MARK subscription can receive REST-backed snapshots/history but no fabricated native MARK stream is introduced.
 
 ### 9.2 `WS /ws/chart`
 
-UI-optimized realtime chart endpoint. It is separate from `/ws/market`; the legacy endpoint keeps its existing request schema, response schema, acknowledgements, and channel names.
+UI-optimized realtime chart endpoint. Each stream accepts optional `price_basis`; omitted values use the canonical compatibility default. Channels and sequence counters include the resolved basis, so MARK and TRADE cannot cross-deliver or share sequence state.
 
 Use this endpoint when a frontend wants one long-lived WebSocket connection and fast symbol/timeframe switching without reconnecting.
 
@@ -1374,6 +1405,10 @@ curl "http://127.0.0.1:8088/api/klines?exchange=oanda&market=metals&symbol=XAU_U
 
 Important current implementation details:
 
+- `PriceBasis` is a first-class identity (`trade`, `mark`, `mid`) and remains separate from ingestion `source` (`rest`, `ws`, `aggregation`, `reconciled`).
+- Candle, tracked-pair, Redis, aggregation, in-memory subscription, and WebSocket channel identities all include `price_basis`.
+- Startup performs a non-destructive schema upgrade: legacy Bybit futures rows are classified as MARK, OANDA as MID, and existing Binance/OKX/Bybit spot rows as TRADE before constraints become non-null. OHLC fields and historical `source` metadata are not rewritten.
+- Legacy Redis keys are read only for the resolved default basis and promoted to canonical basis-aware keys. TRADE never reads a legacy Bybit futures key; legacy aliases can be removed after their normal cache lifetime and a fully basis-aware deployment cycle.
 - Tracked symbols are persisted in PostgreSQL.
 - Closed candles are persisted in PostgreSQL and cached in Redis.
 - Open candles are cached in Redis.
@@ -1381,6 +1416,10 @@ Important current implementation details:
 - Public `/api/klines` requests auto-start temporary `source=on_demand` tracked pairs when the requested pair is not currently active.
 - On-demand tracked pairs are paused after their `auto_stop_at` time; candles already written to storage are retained.
 - OANDA reconciliation runs periodically to correct recent candles.
+
+Operational side-by-side verification is available with `backend/validate_bybit_price_bases.py`; it reports MARK/TRADE row counts, timestamp overlap, and OHLC-different overlap bars without assuming the two series should match.
+
+CryptoBot remains unchanged. Its legacy omitted-basis Bybit futures requests therefore continue to resolve to MARK. Before Hamster opts into TRADE, CryptoBot replay and local candle-cache identities must be extended to include the response `price_basis`; candle access must remain through KlineHub.
 - Binance streams native exchange kline events directly.
 - Bybit spot streams native exchange kline events directly.
 - Bybit futures history uses mark-price REST candles; futures WebSocket kline events are currently skipped.

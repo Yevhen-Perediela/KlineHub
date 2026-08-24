@@ -13,6 +13,7 @@ from ..config import settings
 from ..services.exchange_limit_service import record_http_error, record_http_response
 from ..utils.intervals import latest_closed_open_time, next_interval_open
 from .base import ProviderAdapter
+from ..price_basis import resolve_price_basis
 
 
 class InvalidOkxSymbolError(ValueError):
@@ -109,10 +110,14 @@ class OkxAdapter(ProviderAdapter):
         market: str,
         symbol: str,
         interval: str,
+        price_basis: str | None = None,
         start_time: int | None = None,
         end_time: int | None = None,
         limit: int | None = None,
     ) -> list[dict[str, Any]]:
+        basis = resolve_price_basis(
+            exchange="okx", market=market, requested_price_basis=price_basis
+        )
         inst_id = await self.resolve_symbol(market=market, symbol=symbol)
         bar = self._to_okx_interval(interval)
         target_limit = max(1, int(limit or 300))
@@ -169,6 +174,7 @@ class OkxAdapter(ProviderAdapter):
             )
             if event is None:
                 continue
+            event["price_basis"] = basis.value
             open_time = int(event["open_time"])
             if start_time is not None and open_time < int(start_time):
                 continue
