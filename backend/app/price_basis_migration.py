@@ -73,6 +73,33 @@ async def migrate_price_basis(conn: AsyncConnection) -> None:
                     {"exchange": exchange, "market": market, "basis": basis},
                 )
                 await conn.commit()
+            elif table == "candles":
+                # The same situation may exist for candles when a previous
+                # migration partially classified rows. Keep the already
+                # classified candle and remove the legacy duplicate before
+                # updating price_basis.
+                await conn.execute(
+                    text(
+                        """
+                        DELETE FROM candles AS legacy
+                        WHERE legacy.exchange = :exchange
+                          AND legacy.market = :market
+                          AND legacy.price_basis IS DISTINCT FROM :basis
+                          AND EXISTS (
+                              SELECT 1
+                              FROM candles AS classified
+                              WHERE classified.exchange = legacy.exchange
+                                AND classified.market = legacy.market
+                                AND classified.symbol = legacy.symbol
+                                AND classified.interval = legacy.interval
+                                AND classified.open_time = legacy.open_time
+                                AND classified.price_basis = :basis
+                          )
+                        """
+                    ),
+                    {"exchange": exchange, "market": market, "basis": basis},
+                )
+                await conn.commit()
             while True:
                 result = await conn.execute(
                     text(
