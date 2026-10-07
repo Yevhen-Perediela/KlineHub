@@ -47,6 +47,32 @@ async def migrate_price_basis(conn: AsyncConnection) -> None:
             basis = classify_existing_price_basis(exchange=exchange, market=market).value
             if basis == "trade":
                 continue
+            if table == "tracked_pairs":
+                # An interrupted/partially completed migration can leave both
+                # legacy TRADE and already-classified MARK rows for the same
+                # logical pair. Remove the legacy duplicate before changing
+                # its basis, otherwise the new unique constraint is violated.
+                await conn.execute(
+                    text(
+                        """
+                        DELETE FROM tracked_pairs AS legacy
+                        WHERE legacy.exchange = :exchange
+                          AND legacy.market = :market
+                          AND legacy.price_basis IS DISTINCT FROM :basis
+                          AND EXISTS (
+                              SELECT 1
+                              FROM tracked_pairs AS classified
+                              WHERE classified.exchange = legacy.exchange
+                                AND classified.market = legacy.market
+                                AND classified.symbol = legacy.symbol
+                                AND classified.interval = legacy.interval
+                                AND classified.price_basis = :basis
+                          )
+                        """
+                    ),
+                    {"exchange": exchange, "market": market, "basis": basis},
+                )
+                await conn.commit()
             while True:
                 result = await conn.execute(
                     text(
