@@ -7,6 +7,7 @@ from typing import Any
 
 import httpx
 from sqlalchemy import delete, select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from ..config import settings
@@ -506,18 +507,24 @@ class PopularPairsService:
                         interval=item.key.interval,
                         price_basis=item.key.price_basis,
                     )
-                    row = TrackedPair(
-                        exchange=item.key.exchange,
-                        market=item.key.market,
-                        symbol=item.key.symbol,
-                        interval=item.key.interval,
-                        price_basis=item.key.price_basis,
-                        status="active",
-                        source="popular_refresh",
-                        priority=100,
+                    await session.execute(
+                        pg_insert(TrackedPair)
+                        .values(
+                            exchange=item.key.exchange,
+                            market=item.key.market,
+                            symbol=item.key.symbol,
+                            interval=item.key.interval,
+                            price_basis=item.key.price_basis,
+                            status="active",
+                            source="popular_refresh",
+                            priority=100,
+                        )
+                        .on_conflict_do_nothing(
+                            constraint=(
+                                "uq_tracked_pair_exchange_market_symbol_interval_price_basis"
+                            )
+                        )
                     )
-                    session.add(row)
-                    await session.flush()
                     await self.backfill_service.backfill_recent_pair(
                         exchange=item.key.exchange,
                         market=item.key.market,
