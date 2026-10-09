@@ -1512,3 +1512,99 @@ constraints, or obsolete unique keys that prevent parallel bases. No automatic
 repair can restore provenance or candles already deleted by older migrations.
 The load heuristic sees query activity, not disk pressure: tune delays conservatively
 and stop the worker if production latency rises.
+
+## Klines lookup caches and performance verification
+
+`GET /api/klines` uses two small Redis caches. Defaults:
+
+```env
+AVAILABLE_INTERVALS_CACHE_TTL_SEC=60
+BYBIT_MARK_OPEN_CACHE_TTL_SEC=2
+KLINES_PROFILING_ENABLED=true
+```
+
+Set either cache TTL to `0` to disable it for comparison. Recreate the API
+container after changing environment settings (`docker compose up -d --build api`).
+No schema migration, new index, worker, or writer change is required.
+
+| Cache | Key | Expiry |
+| --- | --- | --- |
+| Closed candle intervals | `md:kline:intervals:v1:{exchange}:{market}:{SYMBOL}:{price_basis}` | 60 seconds; empty results at most 5 seconds |
+| Bybit futures MARK REST open | `md:kline:rest-open:v1:{exchange}:{market}:{SYMBOL}:{interval}:{price_basis}` | 2 seconds from REST request start, capped at candle interval end |
+
+Interval misses use the original DISTINCT query, filtering and sorting. Discovery
+uses TTL refresh, with no per-candle invalidation overhead. WebSocket ingestion
+and REST backfill commit via CandleService; on-demand tracking starts those paths.
+Aggregation reads candles and does not persist a new interval. The standalone
+bootstrap writes directly to PostgreSQL. All these paths are covered by bounded
+staleness, without treating tracked_pairs as the candle inventory. A new interval
+may remain undiscovered for one cache TTL; an empty inventory refreshes sooner.
+
+MARK REST cache hits require a matching candle timestamp, unexpired absolute
+deadline, and finite valid OHLCV. Hits do not extend expiry. Empty/malformed
+responses and REST failures are not cached. TRADE continues using its existing
+stream cache; OANDA is unchanged. Read transactions are released before interval
+cache writes and before the endpoint's MARK open-cache/REST wait.
+
+Per-key asyncio locks double-check Redis after waiting, so concurrent successful
+fills within one API process share a single database/REST call. Weak references
+remove inactive locks; there is no retained in-memory result cache. Multiple API
+processes share Redis results but may each perform a cold fill. On errors, callers
+retry the original operation, rather than caching a failure. Redis operations are
+bounded to 100ms and log a warning on failure before DB/REST fallback. Other
+pre-existing endpoint/collector Redis dependencies remain unchanged.
+
+For reproducible **A–D** comparisons, use a pair with at least 1000 existing
+closed candles, enable profiling, and run the same URL against the same deployment.
+First measure with both TTLs at `0`, then repeat with defaults. To make the caches
+cold, remove only these two example keys (never flush Redis):
+
+```sh
+docker compose exec redis redis-cli DEL md:kline:intervals:v1:bybit:futures:BTCUSDT:mark md:kline:rest-open:v1:bybit:futures:BTCUSDT:1h:mark
+```
+
+This standard-library script measures one cold request, immediate warm requests,
+and concurrent identical requests. Response body reading is included in client
+latency; use the existing `klines_timing` JSON logs for individual stage durations.
+Repeat the key deletion before running the concurrent phase alone to measure a
+cold stampede. Keep tests away from interval rollover for comparable results.
+
+```sh
+python3 - <<'PY'
+from concurrent.futures import ThreadPoolExecutor
+from time import perf_counter, sleep
+from urllib.request import urlopen
+url = 'http://127.0.0.1:8088/api/klines?exchange=bybit&market=futures&symbol=BTCUSDT&interval=1h&price_basis=mark&limit=1000'
+def request(_=None):
+    start = perf_counter()
+    with urlopen(url, timeout=60) as response:
+        response.read()
+    return round((perf_counter() - start) * 1000, 3)
+print('cold_ms', request())
+print('warm_ms', [request() for _ in range(5)])
+with ThreadPoolExecutor(max_workers=8) as pool:
+    print('concurrent_ms', list(pool.map(request, range(8))))
+sleep(2.1)
+print('open_expired_ms', request())
+sleep(60.1)
+print('both_expired_ms', request())
+PY
+```
+
+For **E**, in staging, use normal tracking/backfill to populate a previously absent
+provider-native interval; verify discovery after at most 60 seconds (5 seconds if
+inventory was empty). For **F–G**, use focused fault-injection tests so production
+Redis and exchange access remain available:
+
+```sh
+cd backend
+PYTHONDONTWRITEBYTECODE=1 ../venv/bin/python -m pytest -q tests/test_klines_caching.py tests/test_http_price_basis.py tests/test_aggregation_price_basis.py tests/test_bybit_price_basis.py tests/test_redis_price_basis.py
+```
+
+These cover expiry/new-interval discovery, concurrent fills, Redis read/write
+failure, malformed data, MARK/TRADE separation, rollover, REST failure, and response
+compatibility. The original profiling JSON format is unchanged. Compare warm
+stage durations against the provided baseline (interval lookup 350–430ms; open
+retrieval 190–235ms) and the targets (<10ms each, ideally <100ms total). No production
+latency improvement has been measured in this workspace. After diagnosis, disable
+`KLINES_PROFILING_ENABLED`; retain or tune the cache TTLs as appropriate.

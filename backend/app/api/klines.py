@@ -295,6 +295,8 @@ async def get_klines(
 
         if to_ts >= current_open_ts:
             with measure("open_candle_retrieval"):
+                if exchange == "bybit" and market == "futures" and resolved_price_basis == "mark":
+                    await db.rollback()
                 try:
                     open_bar = await OpenCandleService.get_open_bar(
                         db=db,

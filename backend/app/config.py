@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     coinmarketcap_listings_limit: int = 500
 
     klines_profiling_enabled: bool = False
+    available_intervals_cache_ttl_sec: int = 60
+    bybit_mark_open_cache_ttl_sec: float = 2.0
 
     recent_bars_limit: int = 300
     ws_receive_timeout_sec: int = 60

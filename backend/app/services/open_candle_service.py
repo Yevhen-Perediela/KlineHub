@@ -1,16 +1,23 @@
 from __future__ import annotations
 
+import asyncio
+import json
 import logging
+import math
+import time
+from contextlib import nullcontext
 from decimal import Decimal
 from typing import Any
 
 import httpx
+from redis.exceptions import RedisError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..config import settings
 from ..exchanges.registry import get_adapter
 from .exchange_limit_service import record_http_error, record_http_response
+from ..redis_client import get_redis, cache_lock
 from ..models import Candle
 from ..utils.intervals import (
     floor_to_interval_open,
@@ -36,19 +43,23 @@ class OpenCandleService:
         current_open_ts: int,
         now_ms: int,
     ) -> dict[str, float | int] | None:
-        # Legacy Bybit futures MARK opens remain REST-backed. TRADE opens may
-        # use the native traded-price kline stream cache.
-        if not (exchange == "bybit" and market == "futures" and price_basis == "mark"):
-            open_bar = await cls._get_exact_redis_open_bar(
-                exchange=exchange,
-                market=market,
-                symbol=symbol,
-                interval=interval,
-                price_basis=price_basis,
-                current_open_ts=current_open_ts,
+        if exchange == "bybit" and market == "futures" and price_basis == "mark":
+            return await cls._get_cached_mark_open_bar(
+                exchange=exchange, market=market, symbol=symbol, interval=interval,
+                price_basis=price_basis, current_open_ts=current_open_ts, now_ms=now_ms,
             )
-            if open_bar is not None:
-                return open_bar
+
+        # TRADE opens continue using the native traded-price stream cache.
+        open_bar = await cls._get_exact_redis_open_bar(
+            exchange=exchange,
+            market=market,
+            symbol=symbol,
+            interval=interval,
+            price_basis=price_basis,
+            current_open_ts=current_open_ts,
+        )
+        if open_bar is not None:
+            return open_bar
 
         if exchange == "oanda" and market in {"forex", "metals", "stocks"}:
             open_bar = await cls._get_oanda_aggregated_open_bar(
@@ -73,6 +84,71 @@ class OpenCandleService:
             current_open_ts=current_open_ts,
             now_ms=now_ms,
         )
+
+    @staticmethod
+    def _mark_open_cache_key(exchange: str, market: str, symbol: str, interval: str, price_basis: str) -> str:
+        return f"md:kline:rest-open:v1:{exchange}:{market}:{symbol.upper()}:{interval}:{price_basis}"
+
+    @staticmethod
+    def _valid_mark_bar(bar: Any, current_open_ts: int) -> bool:
+        if not isinstance(bar, dict) or bar.get("time") != current_open_ts:
+            return False
+        try:
+            values = [bar[field] for field in ("open", "high", "low", "close", "volume")]
+            if not all(isinstance(v, (int, float)) and not isinstance(v, bool) and math.isfinite(v) for v in values):
+                return False
+            return (bar["low"] <= min(bar["open"], bar["close"])
+                    <= max(bar["open"], bar["close"]) <= bar["high"] and bar["volume"] >= 0)
+        except (KeyError, TypeError, ValueError, OverflowError):
+            return False
+
+    @classmethod
+    async def _cached_mark_bar(cls, key: str, current_open_ts: int, interval_end: int) -> dict | None:
+        try:
+            async with asyncio.timeout(0.1):
+                raw = await get_redis().get(key)
+            if raw is None:
+                return None
+            cached = json.loads(raw)
+            now = time.time_ns() // 1_000_000
+            if (isinstance(cached, dict) and current_open_ts <= now < interval_end
+                    and isinstance(cached.get("expires_at_ms"), (int, float))
+                    and now < cached["expires_at_ms"]
+                    and cls._valid_mark_bar(cached.get("bar"), current_open_ts)):
+                return cached["bar"]
+        except (RedisError, RuntimeError, TimeoutError):
+            logger.warning("Bybit MARK open cache unavailable; using REST")
+        except (ValueError, TypeError):
+            logger.warning("Invalid Bybit MARK open cache entry; using REST")
+        return None
+
+    @classmethod
+    async def _get_cached_mark_open_bar(cls, **kwargs) -> dict | None:
+        key = cls._mark_open_cache_key(*(kwargs[k] for k in (
+            "exchange", "market", "symbol", "interval", "price_basis")))
+        current_open_ts = kwargs["current_open_ts"]
+        interval_end = next_interval_open(current_open_ts, kwargs["interval"])
+        ttl_ms = max(0, int(settings.bybit_mark_open_cache_ttl_sec * 1000))
+        if ttl_ms:
+            cached = await cls._cached_mark_bar(key, current_open_ts, interval_end)
+            if cached is not None:
+                return cached
+        async with cache_lock(key) if ttl_ms else nullcontext():
+            if ttl_ms:
+                cached = await cls._cached_mark_bar(key, current_open_ts, interval_end)
+                if cached is not None:
+                    return cached
+            # Count REST latency against TTL, rather than extending old samples on write.
+            expires_at = min(time.time_ns() // 1_000_000 + ttl_ms, interval_end)
+            bar = await cls._get_rest_open_bar(**kwargs)
+            remaining = expires_at - time.time_ns() // 1_000_000
+            if ttl_ms and remaining > 0 and cls._valid_mark_bar(bar, current_open_ts):
+                try:
+                    async with asyncio.timeout(0.1):
+                        await get_redis().set(key, json.dumps({"bar": bar, "expires_at_ms": expires_at}), px=remaining)
+                except (RedisError, RuntimeError, TimeoutError):
+                    logger.warning("Bybit MARK open cache write failed")
+            return bar
 
     @staticmethod
     async def _get_exact_redis_open_bar(

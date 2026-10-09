@@ -1,13 +1,21 @@
 from __future__ import annotations
 
-from contextlib import nullcontext
+import asyncio
+import json
+import logging
+
 from collections.abc import Callable
-from typing import ContextManager
+from contextlib import nullcontext
 from decimal import Decimal
+from typing import ContextManager
+
+from redis.exceptions import RedisError
 
 from sqlalchemy import distinct, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ..config import settings
+from ..redis_client import get_redis, cache_lock
 from ..models import Candle
 from ..utils.intervals import (
     count_interval_steps,
@@ -19,9 +27,32 @@ from ..utils.intervals import (
 )
 
 
+logger = logging.getLogger(__name__)
+
+
 class AggregationService:
     @staticmethod
+    def _interval_cache_key(exchange: str, market: str, symbol: str, price_basis: str) -> str:
+        return f"md:kline:intervals:v1:{exchange}:{market}:{symbol.upper()}:{price_basis}"
+
+    @staticmethod
+    async def _cached_intervals(key: str) -> list[str] | None:
+        try:
+            async with asyncio.timeout(0.1):
+                raw = await get_redis().get(key)
+            if raw is not None:
+                values = json.loads(raw)
+                if isinstance(values, list) and all(isinstance(v, str) for v in values):
+                    return sorted((v for v in values if is_supported_interval(v)), key=interval_sort_key)
+        except (RedisError, RuntimeError, TimeoutError):
+            logger.warning("Available-interval cache unavailable; using database")
+        except (ValueError, TypeError):
+            logger.warning("Invalid available-interval cache entry; using database")
+        return None
+
+    @classmethod
     async def get_available_intervals(
+        cls,
         *,
         db: AsyncSession,
         exchange: str,
@@ -29,20 +60,38 @@ class AggregationService:
         symbol: str,
         price_basis: str,
     ) -> list[str]:
-        stmt = select(distinct(Candle.interval)).where(
-            Candle.exchange == exchange,
-            Candle.market == market,
-            Candle.symbol == symbol.upper(),
-            Candle.price_basis == price_basis,
-            Candle.is_closed.is_(True),
-        )
-        result = await db.execute(stmt)
-        intervals = [
-            value
-            for value in result.scalars().all()
-            if value is not None and is_supported_interval(value)
-        ]
-        return sorted(intervals, key=interval_sort_key)
+        key = cls._interval_cache_key(exchange, market, symbol, price_basis)
+        ttl = settings.available_intervals_cache_ttl_sec
+        if ttl > 0:
+            cached = await cls._cached_intervals(key)
+            if cached is not None:
+                return cached
+        async with cache_lock(key) if ttl > 0 else nullcontext():
+            if ttl > 0:
+                cached = await cls._cached_intervals(key)
+                if cached is not None:
+                    return cached
+            stmt = select(distinct(Candle.interval)).where(
+                Candle.exchange == exchange,
+                Candle.market == market,
+                Candle.symbol == symbol.upper(),
+                Candle.price_basis == price_basis,
+                Candle.is_closed.is_(True),
+            )
+            result = await db.execute(stmt)
+            intervals = sorted((
+                value for value in result.scalars().all()
+                if value is not None and is_supported_interval(value)
+            ), key=interval_sort_key)
+            # This lookup is read-only; release its connection before cache I/O.
+            await db.rollback()
+            if ttl > 0:
+                try:
+                    async with asyncio.timeout(0.1):
+                        await get_redis().set(key, json.dumps(intervals), ex=ttl if intervals else min(ttl, 5))
+                except (RedisError, RuntimeError, TimeoutError):
+                    logger.warning("Available-interval cache write failed")
+            return intervals
 
     @classmethod
     async def pick_best_source_interval(

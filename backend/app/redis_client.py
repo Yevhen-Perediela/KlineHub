@@ -1,3 +1,6 @@
+import asyncio
+from weakref import WeakValueDictionary
+
 from redis.asyncio import Redis
 
 from .config import settings
@@ -22,3 +25,15 @@ def get_redis() -> Redis:
     if redis_client is None:
         raise RuntimeError("Redis is not initialized")
     return redis_client
+
+
+# Only active callers retain locks; completed pair lookups do not grow memory.
+_cache_locks: WeakValueDictionary[str, asyncio.Lock] = WeakValueDictionary()
+
+
+def cache_lock(key: str) -> asyncio.Lock:
+    lock = _cache_locks.get(key)
+    if lock is None:
+        lock = asyncio.Lock()
+        _cache_locks[key] = lock
+    return lock
