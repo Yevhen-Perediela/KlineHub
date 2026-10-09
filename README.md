@@ -1407,7 +1407,7 @@ Important current implementation details:
 
 - `PriceBasis` is a first-class identity (`trade`, `mark`, `mid`) and remains separate from ingestion `source` (`rest`, `ws`, `aggregation`, `reconciled`).
 - Candle, tracked-pair, Redis, aggregation, in-memory subscription, and WebSocket channel identities all include `price_basis`.
-- Startup performs a non-destructive schema upgrade: legacy Bybit futures rows are classified as MARK, OANDA as MID, and existing Binance/OKX/Bybit spot rows as TRADE before constraints become non-null. OHLC fields and historical `source` metadata are not rewritten.
+- Startup verifies the required schema using PostgreSQL catalogs with short timeouts. Schema setup and historical maintenance are explicit commands; startup never classifies or deletes historical rows.
 - Legacy Redis keys are read only for the resolved default basis and promoted to canonical basis-aware keys. TRADE never reads a legacy Bybit futures key; legacy aliases can be removed after their normal cache lifetime and a fully basis-aware deployment cycle.
 - Tracked symbols are persisted in PostgreSQL.
 - Closed candles are persisted in PostgreSQL and cached in Redis.
@@ -1428,3 +1428,87 @@ CryptoBot remains unchanged. Its legacy omitted-basis Bybit futures requests the
 ## 14. Changelog Guidance
 
 When you add or change routes, update this README in the same change set so the documented contract always matches the deployed API.
+
+
+## Price-basis maintenance
+
+For a fresh database, initialize the schema before starting the API:
+
+```sh
+docker compose run --rm price-basis-worker python -m app.price_basis_migration schema
+```
+
+On an already migrated database this command verifies the schema and creates only
+`price_basis_maintenance`, a small checkpoint table. Existing indexes, constraints,
+column defaults, and historical rows are preserved. Incomplete existing schemas
+fail with a description of missing requirements and need operator review. This
+command deliberately does not guess legacy semantics or build large indexes.
+If a new production unique index is required, an operator must use `CREATE UNIQUE
+INDEX CONCURRENTLY` outside a transaction (SQLAlchemy connection isolation level
+`AUTOCOMMIT`), verify `pg_index.indisvalid`, and review obsolete unique constraints
+before removing them. Never run the former startup migration.
+
+Retire the unsafe legacy migration once, without scanning candles:
+
+```sh
+docker compose run --rm price-basis-worker python -m app.price_basis_migration migrate
+```
+
+The `legacy-v2-preserve-labels` checkpoint records completion. There is no reliable
+original-price provenance in stored rows: ingestion `source` is not a price type.
+No historical correction is authorized from exchange defaults alone. Both Bybit
+futures MARK and TRADE are valid. OANDA TRADE or unknown exchange/basis combinations
+are reported as unverified, not corrected; valid labels cannot prove historical
+OHLC semantics. Audit does not detect duplicates or claim to validate OHLC provenance.
+
+Start and stop an independent, throttled audit:
+
+```sh
+docker compose --profile maintenance up -d price-basis-worker
+docker compose stop price-basis-worker
+```
+
+It is opt-in, has no API dependency, and exits after its saved horizon is audited.
+It scans at most 1000 IDs per batch, commits checkpoints per batch, waits 2 seconds
+between batches, and waits 15 seconds when at least four other client queries are
+active or an active query waits on a lock. Lock/query timeouts are 500ms/3s;
+timeouts roll back the batch and postpone work. SIGTERM interrupts pauses and
+finishes only the current bounded transaction. A session advisory lock prevents
+concurrent audit/migration workers. Read-only audit refers to application data:
+only checkpoint metadata is written. Unsupported or missing labels are counted,
+with up to five row IDs/reasons logged per affected batch.
+
+```sh
+docker compose run --rm price-basis-worker python -m app.price_basis_migration audit --batch-size 1000 --delay 2 --busy-delay 15 --max-active 4
+```
+
+Progress is available without counting the candle table:
+
+```sql
+SELECT * FROM price_basis_maintenance ORDER BY task;
+```
+
+`audit-v1:tracked_pairs` and `audit-v1:candles` keep separate last/upper IDs,
+inspected/issue totals, completion flags, and update timestamps. Restarts resume
+from committed IDs and completed tasks exit without re-reading historical rows.
+For an incremental audit of newly ingested rows, after the worker has stopped,
+explicitly extend each completed task's horizon (keep `last_id` and totals):
+
+```sql
+UPDATE price_basis_maintenance
+SET upper_id = COALESCE((SELECT id FROM candles ORDER BY id DESC LIMIT 1), 0),
+    completed = false, updated_at = now()
+WHERE task = 'audit-v1:candles' AND completed;
+UPDATE price_basis_maintenance
+SET upper_id = COALESCE((SELECT id FROM tracked_pairs ORDER BY id DESC LIMIT 1), 0),
+    completed = false, updated_at = now()
+WHERE task = 'audit-v1:tracked_pairs' AND completed;
+```
+
+Before deployment stop any old API instance still running the former migration
+and confirm its transaction has ended. Take a backup and inspect schema readiness;
+startup intentionally refuses missing/nullable basis columns, missing unique/check
+constraints, or obsolete unique keys that prevent parallel bases. No automatic
+repair can restore provenance or candles already deleted by older migrations.
+The load heuristic sees query activity, not disk pressure: tune delays conservatively
+and stop the worker if production latency rises.

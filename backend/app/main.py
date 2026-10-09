@@ -7,7 +7,7 @@ from sqlalchemy.exc import TimeoutError as SQLAlchemyTimeoutError
 from sqlalchemy import text
 
 from .config import settings
-from .db import Base, engine, SessionLocal
+from .db import engine, SessionLocal
 from .redis_client import init_redis, close_redis
 from .api.health import router as health_router
 from .api.stats import router as stats_router
@@ -23,7 +23,7 @@ from .services.chart_ws_service import ChartWebSocketService
 from .services.stream_manager import StreamManager
 from .services.on_demand_tracking_service import OnDemandTrackingService
 from .state import runtime_state
-from .price_basis_migration import migrate_price_basis
+from .price_basis_migration import verify_price_basis_schema
 
 logging.basicConfig(
     level=logging.INFO,
@@ -55,23 +55,14 @@ chart_ws_service.on_demand_tracking_service = on_demand_tracking_service
 
 
 async def ensure_schema_upgrades() -> None:
-    async with engine.connect() as conn:
-        await conn.execute(text("ALTER TABLE tracked_pairs ADD COLUMN IF NOT EXISTS auto_stop_at TIMESTAMP NULL"))
-        await conn.execute(
-            text("CREATE INDEX IF NOT EXISTS ix_tracked_pairs_auto_stop_at ON tracked_pairs (auto_stop_at)")
-        )
-        await conn.commit()
-        await migrate_price_basis(conn)
+    async with engine.begin() as conn:
+        await verify_price_basis_schema(conn)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await init_redis()
-
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-
     await ensure_schema_upgrades()
+    await init_redis()
     await stream_manager.start()
     await on_demand_tracking_service.start()
 

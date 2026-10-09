@@ -1,6 +1,6 @@
 services:
   api:
-    build:
+    build: &backend_build
       context: ./backend
       dockerfile: Dockerfile
     container_name: marketdata-api
@@ -21,6 +21,22 @@ services:
     networks:
       - marketdata_net
       # - klinehub_internal
+
+  price-basis-worker:
+    build: *backend_build
+    profiles: [maintenance]
+    restart: "no"
+    env_file:
+      - .env
+    command: ["python", "-m", "app.price_basis_migration", "audit"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+    networks:
+      - marketdata_net
+    stop_grace_period: 15s
 
   frontend:
     build:

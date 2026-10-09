@@ -65,5 +65,5 @@ def resolve_price_basis(
 
 
 def classify_existing_price_basis(*, exchange: str, market: str) -> PriceBasis:
-    """Classify legacy rows by their verified exchange/market semantics."""
+    """Return the legacy default; this is not provenance for an existing row."""
     return resolve_price_basis(exchange=exchange, market=market)

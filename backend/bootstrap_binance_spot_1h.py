@@ -41,6 +41,7 @@ tracked_pairs = Table(
     Column("exchange", String(32), nullable=False, index=True),
     Column("market", String(32), nullable=False, index=True),
     Column("symbol", String(64), nullable=False, index=True),
+    Column("price_basis", String(16), nullable=False),
     Column("interval", String(16), nullable=False, default="1h"),
     Column("status", String(16), nullable=False, default="active", index=True),
     Column("source", String(32), nullable=False, default="api"),
@@ -52,7 +53,8 @@ tracked_pairs = Table(
         "market",
         "symbol",
         "interval",
-        name="uq_tracked_pair_exchange_market_symbol_interval",
+        "price_basis",
+        name="uq_tracked_pair_exchange_market_symbol_interval_price_basis",
     ),
 )
 
@@ -63,6 +65,7 @@ candles = Table(
     Column("exchange", String(32), nullable=False, index=True),
     Column("market", String(32), nullable=False, index=True),
     Column("symbol", String(64), nullable=False, index=True),
+    Column("price_basis", String(16), nullable=False),
     Column("interval", String(16), nullable=False, index=True),
     Column("open_time", BigInteger, nullable=False, index=True),
     Column("close_time", BigInteger, nullable=False),
@@ -81,8 +84,9 @@ candles = Table(
         "market",
         "symbol",
         "interval",
+        "price_basis",
         "open_time",
-        name="uq_candle_exchange_market_symbol_interval_open_time",
+        name="uq_candle_exchange_market_symbol_interval_price_basis_open_time",
     ),
     Index(
         "ix_candle_lookup",
@@ -173,6 +177,7 @@ async def upsert_tracked_pair(session, pair: PairItem) -> None:
         market=pair.market,
         symbol=pair.symbol,
         interval=INTERVAL,
+        price_basis="trade",
         status="active",
         source=pair.source,
         priority=pair.priority,
@@ -181,7 +186,7 @@ async def upsert_tracked_pair(session, pair: PairItem) -> None:
     )
 
     stmt = stmt.on_conflict_do_update(
-        constraint="uq_tracked_pair_exchange_market_symbol_interval",
+        constraint="uq_tracked_pair_exchange_market_symbol_interval_price_basis",
         set_={
             "status": "active",
             "source": pair.source,
@@ -211,6 +216,7 @@ async def insert_candles_chunk(
                 "market": pair.market,
                 "symbol": pair.symbol,
                 "interval": INTERVAL,
+                "price_basis": "trade",
                 "open_time": int(row[0]),
                 "close_time": int(row[6]),
                 "open": str(row[1]),
@@ -228,7 +234,7 @@ async def insert_candles_chunk(
 
     stmt = pg_insert(candles).values(payload)
     stmt = stmt.on_conflict_do_nothing(
-        constraint="uq_candle_exchange_market_symbol_interval_open_time"
+        constraint="uq_candle_exchange_market_symbol_interval_price_basis_open_time"
     )
 
     result = await session.execute(stmt)
@@ -324,6 +330,7 @@ async def start_stream_via_internal_api(
         "market": pair.market,
         "symbol": pair.symbol,
         "interval": INTERVAL,
+        "price_basis": "trade",
         "source": "bootstrap",
         "priority": pair.priority,
         "backfill_limit": 1,
