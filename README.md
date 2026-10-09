@@ -1612,3 +1612,52 @@ stage durations against the provided baseline (interval lookup 350–430ms; open
 retrieval 190–235ms) and the targets (<10ms each, ideally <100ms total). No production
 latency improvement has been measured in this workspace. After diagnosis, disable
 `KLINES_PROFILING_ENABLED`; retain or tune the cache TTLs as appropriate.
+
+## On-demand activation and backfill profiling
+
+On-demand tracking still waits for the tracked-pair database commit. New or
+reactivated pairs request a managed background stream reload, so HTTP and chart
+requests no longer wait for stream shutdown/reconnection. Requests arriving while
+a reload is running coalesce into one pending pass; failures are logged and
+retried using the existing reconnect delay. Service shutdown cancels and awaits
+its reload and activation tasks. A disconnected HTTP waiter does not cancel an
+activation shared with other requests. Active manual pairs and on-demand expiry
+extension retain their existing behavior.
+
+Stream shutdown now cancels the supervisor immediately, interrupting idle or
+reconnect sleeps. WebSocket cleanup may still take time in the background. The
+existing stop/start reload remains in use, including its existing repair scheduling;
+this change does not implement incremental stream subscription updates.
+
+Enable diagnosis with:
+
+```env
+KLINES_PROFILING_ENABLED=true
+BACKFILL_PROFILING_ENABLED=true
+```
+
+Recreate the API after updating `.env`:
+
+```sh
+docker compose up -d --build api
+```
+
+The existing `klines_timing` JSON remains unchanged. Additional optional events:
+
+- `on_demand_tracking_timing`: activation lookup, commit, total, outcome, and
+  whether a reload was required; shared activations produce one summary.
+- `stream_reload_timing`: stop, start, and total for each reload pass. Start means
+  supervisor task creation, not completed upstream connection establishment.
+- `backfill_timing`: operation, outcome, total, stage durations and call counts.
+  It covers range normalization, missing-range SQL, timestamp materialization,
+  gap computation, connection release, chunk planning, REST, database upsert/commit,
+  Redis writes, and cursor advancement. Recent backfill, tail repair, reconciliation,
+  and repair-all also emit operation summaries. Stages aggregate across pages;
+  summaries for parent operations include nested work and must not be added together.
+
+New profiling records contain operation names, timings, counts, and exception
+class names, without credential values or exception messages. Profiling defaults
+to disabled. Backfill query/order/limits, pagination, Redis writes, exceptions,
+concurrency, and return values are unchanged. Missing history is still loaded
+synchronously for HTTP; an actual slow backfill can therefore still delay the response.
+The optimization removes waiting for reload, not waiting for required history.

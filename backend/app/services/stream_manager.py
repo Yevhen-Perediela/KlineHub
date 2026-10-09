@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import json
+import time
 from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -75,6 +77,8 @@ class StreamManager:
     async def stop(self) -> None:
         logger.info("Stopping StreamManager")
         self._stop_event.set()
+        if self._supervisor_task:
+            self._supervisor_task.cancel()
 
         for task in self._worker_tasks:
             task.cancel()
@@ -83,7 +87,8 @@ class StreamManager:
             try:
                 await task
             except asyncio.CancelledError:
-                pass
+                if asyncio.current_task().cancelling():
+                    raise
             except Exception:
                 logger.exception("Worker task stop error")
 
@@ -94,7 +99,8 @@ class StreamManager:
             try:
                 await self._backfill_task
             except asyncio.CancelledError:
-                pass
+                if asyncio.current_task().cancelling():
+                    raise
             except Exception:
                 logger.exception("Backfill task stop error")
             finally:
@@ -105,7 +111,8 @@ class StreamManager:
             try:
                 await self._reconcile_task
             except asyncio.CancelledError:
-                pass
+                if asyncio.current_task().cancelling():
+                    raise
             except Exception:
                 logger.exception("Reconcile task stop error")
             finally:
@@ -114,6 +121,9 @@ class StreamManager:
         if self._supervisor_task:
             try:
                 await asyncio.wait_for(self._supervisor_task, timeout=10)
+            except asyncio.CancelledError:
+                if asyncio.current_task().cancelling():
+                    raise
             except asyncio.TimeoutError:
                 self._supervisor_task.cancel()
                 try:
@@ -139,8 +149,24 @@ class StreamManager:
             while True:
                 self._reload_requested = False
                 logger.info("Reloading StreamManager")
-                await self.stop()
-                await self.start()
+                profiling = settings.klines_profiling_enabled
+                started = time.perf_counter() if profiling else 0.0
+                stopped = started
+                try:
+                    await self.stop()
+                    stopped = time.perf_counter() if profiling else 0.0
+                    if asyncio.current_task().cancelling():
+                        raise asyncio.CancelledError
+                    await self.start()
+                finally:
+                    if profiling:
+                        ended = time.perf_counter()
+                        logger.info("%s", json.dumps({
+                            "event": "stream_reload_timing",
+                            "total_ms": round((ended - started) * 1000, 3),
+                            "stop_ms": round(((stopped if stopped != started else ended) - started) * 1000, 3),
+                            "start_ms": round((ended - stopped) * 1000, 3) if stopped != started else 0.0,
+                        }))
                 if not self._reload_requested:
                     break
 

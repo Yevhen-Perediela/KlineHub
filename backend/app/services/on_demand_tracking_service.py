@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
+import time
 from datetime import datetime, timedelta
 
 from sqlalchemy import select
@@ -26,6 +28,8 @@ class OnDemandTrackingService:
         self.stream_manager = stream_manager
         self._stop_event = asyncio.Event()
         self._task: asyncio.Task | None = None
+        self._reload_task: asyncio.Task | None = None
+        self._reload_pending = False
         self._activation_lock = asyncio.Lock()
         self._activation_tasks: dict[tuple[str, str, str, str, str], asyncio.Task[None]] = {}
 
@@ -37,15 +41,42 @@ class OnDemandTrackingService:
 
     async def stop(self) -> None:
         self._stop_event.set()
-        if not self._task:
+        tasks = [task for task in (self._task, self._reload_task, *self._activation_tasks.values()) if task]
+        for task in tasks:
+            task.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
+        self._task = None
+        self._reload_task = None
+        self._reload_pending = False
+        self._activation_tasks.clear()
+
+    def _request_reload(self) -> None:
+        if self._stop_event.is_set():
             return
-        self._task.cancel()
-        try:
-            await self._task
-        except asyncio.CancelledError:
-            pass
-        finally:
-            self._task = None
+        self._reload_pending = True
+        if self._reload_task is None or self._reload_task.done():
+            self._reload_task = asyncio.create_task(self._run_reload_loop())
+
+    async def _run_reload_loop(self) -> None:
+        while self._reload_pending and not self._stop_event.is_set():
+            self._reload_pending = False
+            try:
+                await self.stream_manager.reload()
+            except asyncio.CancelledError:
+                raise
+            except Exception:
+                logger.exception("On-demand stream reload failed; retrying")
+                self._reload_pending = True
+                try:
+                    await asyncio.wait_for(self._stop_event.wait(), timeout=settings.ws_reconnect_min_sec)
+                except asyncio.TimeoutError:
+                    pass
+
+    def _activation_finished(self, key: tuple[str, str, str, str, str], task: asyncio.Task) -> None:
+        if self._activation_tasks.get(key) is task:
+            self._activation_tasks.pop(key, None)
+        if not task.cancelled():
+            task.exception()  # Retrieve errors even if every HTTP waiter disconnected.
 
     async def ensure_pair_tracked(
         self,
@@ -70,9 +101,10 @@ class OnDemandTrackingService:
                     )
                 )
                 self._activation_tasks[key] = task
+                task.add_done_callback(lambda finished: self._activation_finished(key, finished))
 
         try:
-            await task
+            await asyncio.shield(task)
         finally:
             async with self._activation_lock:
                 if self._activation_tasks.get(key) is task and task.done():
@@ -87,67 +119,87 @@ class OnDemandTrackingService:
         interval: str,
         price_basis: str,
     ) -> None:
-        expires_at = self._new_expiration()
+        profiling = settings.klines_profiling_enabled
+        started = time.perf_counter() if profiling else 0.0
+        query_ms = commit_ms = 0.0
         reload_required = False
+        outcome = "ok"
+        try:
+            expires_at = self._new_expiration()
 
-        async with self.session_factory() as session:
-            result = await session.execute(
-                select(TrackedPair).where(
-                    TrackedPair.exchange == exchange,
-                    TrackedPair.market == market,
-                    TrackedPair.symbol == symbol.upper(),
-                    TrackedPair.interval == interval,
-                    TrackedPair.price_basis == price_basis,
+            async with self.session_factory() as session:
+                query_started = time.perf_counter() if profiling else 0.0
+                result = await session.execute(
+                    select(TrackedPair).where(
+                        TrackedPair.exchange == exchange,
+                        TrackedPair.market == market,
+                        TrackedPair.symbol == symbol.upper(),
+                        TrackedPair.interval == interval,
+                        TrackedPair.price_basis == price_basis,
+                    )
                 )
-            )
-            item = result.scalar_one_or_none()
+                item = result.scalar_one_or_none()
+                query_ms = (time.perf_counter() - query_started) * 1000 if profiling else 0.0
 
-            if item is None:
-                item = TrackedPair(
-                    exchange=exchange,
-                    market=market,
-                    symbol=symbol.upper(),
-                    interval=interval,
-                    price_basis=price_basis,
-                    status="active",
-                    source=self.source,
-                    priority=500,
-                    auto_stop_at=expires_at,
-                )
-                session.add(item)
-                reload_required = True
-                logger.info(
-                    "Created on-demand tracked pair %s %s %s %s %s until %s",
-                    exchange,
-                    market,
-                    symbol,
-                    interval,
-                    price_basis,
-                    expires_at,
-                )
-            elif item.status != "active":
-                item.status = "active"
-                item.source = self.source
-                item.auto_stop_at = expires_at
-                item.updated_at = datetime.utcnow()
-                reload_required = True
-                logger.info(
-                    "Activated on-demand tracked pair %s %s %s %s %s until %s",
-                    exchange,
-                    market,
-                    symbol,
-                    interval,
-                    price_basis,
-                    expires_at,
-                )
-            elif item.source == self.source:
-                item.auto_stop_at = expires_at
-                item.updated_at = datetime.utcnow()
+                if item is None:
+                    item = TrackedPair(
+                        exchange=exchange,
+                        market=market,
+                        symbol=symbol.upper(),
+                        interval=interval,
+                        price_basis=price_basis,
+                        status="active",
+                        source=self.source,
+                        priority=500,
+                        auto_stop_at=expires_at,
+                    )
+                    session.add(item)
+                    reload_required = True
+                    logger.info(
+                        "Created on-demand tracked pair %s %s %s %s %s until %s",
+                        exchange,
+                        market,
+                        symbol,
+                        interval,
+                        price_basis,
+                        expires_at,
+                    )
+                elif item.status != "active":
+                    item.status = "active"
+                    item.source = self.source
+                    item.auto_stop_at = expires_at
+                    item.updated_at = datetime.utcnow()
+                    reload_required = True
+                    logger.info(
+                        "Activated on-demand tracked pair %s %s %s %s %s until %s",
+                        exchange,
+                        market,
+                        symbol,
+                        interval,
+                        price_basis,
+                        expires_at,
+                    )
+                elif item.source == self.source:
+                    item.auto_stop_at = expires_at
+                    item.updated_at = datetime.utcnow()
 
-            await session.commit()
+                commit_started = time.perf_counter() if profiling else 0.0
+                await session.commit()
+                commit_ms = (time.perf_counter() - commit_started) * 1000 if profiling else 0.0
 
-        if reload_required:
-            await self.stream_manager.reload()
+            if reload_required:
+                self._request_reload()
+        except BaseException as exc:
+            outcome = type(exc).__name__
+            raise
+        finally:
+            if profiling:
+                logger.info("%s", json.dumps({
+                    "event": "on_demand_tracking_timing", "outcome": outcome,
+                    "total_ms": round((time.perf_counter() - started) * 1000, 3),
+                    "lookup_ms": round(query_ms, 3), "commit_ms": round(commit_ms, 3),
+                    "reload_required": reload_required,
+                }))
 
     async def expire_once(self) -> int:
         now = datetime.utcnow()
@@ -174,7 +226,7 @@ class OnDemandTrackingService:
 
         if expired_count:
             logger.info("Paused %s expired on-demand tracked pairs", expired_count)
-            await self.stream_manager.reload()
+            self._request_reload()
 
         return expired_count
 

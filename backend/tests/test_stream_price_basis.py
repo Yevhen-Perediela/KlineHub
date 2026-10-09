@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from unittest.mock import AsyncMock
 
 import pytest
@@ -82,3 +83,36 @@ async def test_bybit_native_futures_kline_cannot_mutate_mark_only_state():
     )
 
     manager._publish_native_kline.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_stop_interrupts_idle_supervisor_without_waiting_for_its_sleep():
+    manager = StreamManager(session_factory=None, backfill_service=None, realtime_service=None)
+    entered = asyncio.Event()
+    async def supervisor():
+        entered.set()
+        await asyncio.sleep(30)
+    manager._supervisor_task = asyncio.create_task(supervisor())
+    await entered.wait()
+    await asyncio.wait_for(manager.stop(), timeout=0.5)
+    assert manager._supervisor_task is None
+
+
+@pytest.mark.asyncio
+async def test_cancelled_reload_does_not_restart_streams():
+    manager = StreamManager(session_factory=None, backfill_service=None, realtime_service=None)
+    entered = asyncio.Event()
+    async def stop():
+        entered.set()
+        try:
+            await asyncio.Event().wait()
+        except asyncio.CancelledError:
+            pass  # Worker cleanup can absorb a cancellation.
+    manager.stop = stop
+    manager.start = AsyncMock()
+    task = asyncio.create_task(manager.reload())
+    await entered.wait()
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+    manager.start.assert_not_awaited()
