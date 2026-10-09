@@ -11,7 +11,7 @@ from typing import ContextManager
 
 from redis.exceptions import RedisError
 
-from sqlalchemy import distinct, select
+from sqlalchemy import column, select, values
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..config import settings
@@ -23,6 +23,7 @@ from ..utils.intervals import (
     interval_can_aggregate,
     interval_sort_key,
     is_supported_interval,
+    list_supported_intervals,
     next_interval_open,
 )
 
@@ -71,12 +72,19 @@ class AggregationService:
                 cached = await cls._cached_intervals(key)
                 if cached is not None:
                     return cached
-            stmt = select(distinct(Candle.interval)).where(
-                Candle.exchange == exchange,
-                Candle.market == market,
-                Candle.symbol == symbol.upper(),
-                Candle.price_basis == price_basis,
-                Candle.is_closed.is_(True),
+            candidates = values(
+                column("interval", Candle.__table__.c.interval.type),
+                name="candidate_intervals",
+            ).data([(interval,) for interval in list_supported_intervals()])
+            stmt = select(candidates.c.interval).where(
+                select(1).select_from(Candle).where(
+                    Candle.exchange == exchange,
+                    Candle.market == market,
+                    Candle.symbol == symbol.upper(),
+                    Candle.interval == candidates.c.interval,
+                    Candle.price_basis == price_basis,
+                    Candle.is_closed.is_(True),
+                ).correlate(candidates).exists()
             )
             result = await db.execute(stmt)
             intervals = sorted((

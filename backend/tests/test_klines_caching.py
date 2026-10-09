@@ -276,3 +276,116 @@ async def test_cancelled_interval_fill_releases_lock(cache):
     db.execute = original_execute
     assert await asyncio.wait_for(
         aggregation.AggregationService.get_available_intervals(db=db, **INTERVAL_ARGS), timeout=1) == ['1m']
+
+
+class IntervalQueryDb:
+    """Run the generated EXISTS predicates against a real in-memory candle table."""
+    def __init__(self, rows):
+        import sqlite3
+        self.conn = sqlite3.connect(':memory:')
+        self.conn.execute('CREATE TABLE candles (exchange TEXT, market TEXT, symbol TEXT, interval TEXT, price_basis TEXT, is_closed BOOLEAN)')
+        self.conn.executemany('INSERT INTO candles VALUES (?, ?, ?, ?, ?, ?)', rows)
+        self.conn.commit()
+        self.statements = []
+
+    async def execute(self, statement):
+        import re
+        from sqlalchemy.dialects import sqlite
+        self.statements.append(statement)
+        compiled = statement.compile(dialect=sqlite.dialect(paramstyle='named'))
+        sql = str(compiled)
+        # SQLite requires VALUES in a CTE instead of PostgreSQL's named FROM alias.
+        relation = re.search(r'FROM \((VALUES .*?)\) AS candidate_intervals \(interval\)', sql)
+        assert relation is not None
+        sql = ('WITH candidate_intervals(interval) AS (' + relation[1] + ')\n'
+               + sql.replace(relation[0], 'FROM candidate_intervals'))
+        rows = [r[0] for r in self.conn.execute(sql, compiled.params)]
+        return SimpleNamespace(scalars=lambda: SimpleNamespace(all=lambda: rows))
+
+    async def rollback(self):
+        self.conn.rollback()
+
+    def original_intervals(self, exchange, market, symbol, price_basis):
+        from app.utils.intervals import is_supported_interval, interval_sort_key
+        rows = self.conn.execute('''SELECT DISTINCT interval FROM candles
+            WHERE exchange = ? AND market = ? AND symbol = ? AND price_basis = ? AND is_closed = 1''',
+            (exchange, market, symbol.upper(), price_basis))
+        return sorted((r[0] for r in rows if r[0] is not None and is_supported_interval(r[0])), key=interval_sort_key)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('exchange,market,symbol,price_basis', [
+    ('bybit', 'futures', 'btcusdt', 'mark'), ('bybit', 'futures', 'BTCUSDT', 'trade'),
+    ('bybit', 'spot', 'BTCUSDT', 'trade'), ('binance', 'spot', 'BTCUSDT', 'trade'),
+    ('oanda', 'forex', 'EUR_USD', 'mid'), ('okx', 'futures', 'BTCUSDT', 'trade'),
+    ('bybit', 'futures', 'MISSING', 'mark'),
+])
+async def test_exists_query_matches_distinct_results(cache, exchange, market, symbol, price_basis):
+    from sqlalchemy.dialects import postgresql
+    from app.utils.intervals import list_supported_intervals
+    db = IntervalQueryDb([
+        ('bybit', 'futures', 'BTCUSDT', interval, 'mark', True)
+        for interval in reversed(list_supported_intervals())
+    ] + [
+        ('bybit', 'futures', 'BTCUSDT', '1m', 'mark', True),  # Duplicate interval
+        ('bybit', 'futures', 'BTCUSDT', '1M', 'trade', True),
+        ('bybit', 'futures', 'BTCUSDT', '1m', 'trade', False),
+        ('bybit', 'futures', 'BTCUSDT', '60', 'mark', True),
+        ('bybit', 'futures', 'BTCUSDT', 'D', 'mark', True),
+        ('bybit', 'futures', 'BTCUSDT', None, 'mark', True),
+        ('bybit', 'spot', 'BTCUSDT', '5m', 'trade', True),
+        ('binance', 'spot', 'BTCUSDT', '1h', 'trade', True),
+        ('oanda', 'forex', 'EUR_USD', '1m', 'mid', True),
+        ('okx', 'futures', 'BTCUSDT', '4h', 'trade', True),
+    ])
+    args = dict(exchange=exchange, market=market, symbol=symbol, price_basis=price_basis)
+    try:
+        result = await aggregation.AggregationService.get_available_intervals(db=db, **args)
+        assert result == db.original_intervals(**args)
+        assert len(db.statements) == 1
+        compiled = db.statements[0].compile(dialect=postgresql.dialect())
+        sql = str(compiled)
+        assert 'DISTINCT' not in sql
+        assert 'VALUES' in sql and 'WHERE EXISTS (SELECT 1' in sql
+        assert 'candles.interval = candidate_intervals.interval' in sql
+        assert 'candles.is_closed IS true' in sql
+        assert {v for k, v in compiled.params.items() if k.startswith('param_')} == set(list_supported_intervals())
+        # PostgreSQL relation is correlated, not also included inside the EXISTS.
+        assert sql.count('AS candidate_intervals') == 1
+        assert await aggregation.AggregationService.get_available_intervals(db=db, **args) == result
+        assert len(db.statements) == 1  # Redis hit
+    finally:
+        db.conn.close()
+
+
+@pytest.mark.asyncio
+async def test_exists_fallback_and_source_selection(cache):
+    cache.fail = True
+    db = IntervalQueryDb([
+        ('bybit', 'futures', 'BTCUSDT', interval, 'mark', True)
+        for interval in ['1m', '5m', '30m', '1M']
+    ])
+    try:
+        assert await aggregation.AggregationService.pick_best_source_interval(db=db, target_interval='1h', **INTERVAL_ARGS) == '30m'
+        assert await aggregation.AggregationService.pick_best_source_interval(db=db, target_interval='1M', **INTERVAL_ARGS) == '1M'
+        assert len(db.statements) == 2
+    finally:
+        db.conn.close()
+
+
+@pytest.mark.asyncio
+async def test_new_authoritative_interval_is_discovered_after_cache_expiry(cache, monkeypatch):
+    from app.utils import intervals
+    db = IntervalQueryDb([('bybit', 'futures', 'BTCUSDT', '8h', 'mark', True)])
+    try:
+        assert await aggregation.AggregationService.get_available_intervals(db=db, **INTERVAL_ARGS) == []
+        supported = list(intervals.SUPPORTED_INTERVALS)
+        supported.insert(supported.index('12h'), '8h')
+        monkeypatch.setattr(intervals, 'SUPPORTED_INTERVALS', tuple(supported))
+        monkeypatch.setattr(intervals, 'INTERVAL_ORDER', {v: i for i, v in enumerate(supported)})
+        monkeypatch.setitem(intervals.FIXED_INTERVAL_MS, '8h', 8 * 3_600_000)
+        cache.now = 5
+        assert await aggregation.AggregationService.pick_best_source_interval(db=db, target_interval='1d', **INTERVAL_ARGS) == '8h'
+        assert len(db.statements) == 2
+    finally:
+        db.conn.close()

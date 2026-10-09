@@ -1532,7 +1532,11 @@ No schema migration, new index, worker, or writer change is required.
 | Closed candle intervals | `md:kline:intervals:v1:{exchange}:{market}:{SYMBOL}:{price_basis}` | 60 seconds; empty results at most 5 seconds |
 | Bybit futures MARK REST open | `md:kline:rest-open:v1:{exchange}:{market}:{SYMBOL}:{interval}:{price_basis}` | 2 seconds from REST request start, capped at candle interval end |
 
-Interval misses use the original DISTINCT query, filtering and sorting. Discovery
+Interval misses use one VALUES + EXISTS query over the authoritative supported
+interval list, preserving filtering and sorting. Each candidate probes the
+existing composite index by exchange, market, symbol, interval, and price basis,
+with the closed-candle filter. Unsupported legacy spellings remain excluded.
+Discovery
 uses TTL refresh, with no per-candle invalidation overhead. WebSocket ingestion
 and REST backfill commit via CandleService; on-demand tracking starts those paths.
 Aggregation reads candles and does not persist a new interval. The standalone
