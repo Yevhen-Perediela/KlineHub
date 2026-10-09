@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+import logging
 from types import SimpleNamespace
 
 import pytest
@@ -37,13 +39,16 @@ class FakeOnDemand:
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("profiling", [False, True])
 @pytest.mark.parametrize(
     ("requested_basis", "expected_basis", "expected_close"),
     [(None, "mark", 100.0), ("mark", "mark", 100.0), ("trade", "trade", 200.0)],
 )
 async def test_bybit_futures_http_default_and_explicit_basis(
-    monkeypatch, requested_basis, expected_basis, expected_close
+    monkeypatch, caplog, profiling, requested_basis, expected_basis, expected_close
 ):
+    monkeypatch.setattr(klines_api.settings, "klines_profiling_enabled", profiling)
+    caplog.set_level(logging.INFO, logger=klines_api.__name__)
     on_demand = FakeOnDemand()
     fake_backfill = FakeBackfill()
     request = SimpleNamespace(
@@ -101,3 +106,41 @@ async def test_bybit_futures_http_default_and_explicit_basis(
     assert response.price_basis == expected_basis
     assert response.bars[0].close == expected_close
     assert on_demand.calls[0]["price_basis"] == expected_basis
+
+    summaries = [r for r in caplog.records if r.name == klines_api.__name__]
+    assert len(summaries) == int(profiling)
+    if profiling:
+        summary = json.loads(summaries[0].getMessage())
+        assert summary["event"] == "klines_timing"
+        assert summary["total_ms"] >= sum(summary["stages_ms"].values()) - 0.01
+        assert set(summary["stages_ms"]) == {
+            "symbol_resolution", "available_interval_lookup", "pair_validation",
+            "on_demand_tracking", "missing_range_backfill", "database_candle_retrieval",
+            "aggregation", "open_candle_retrieval", "response_preparation",
+        }
+        assert summary["stages_ms"]["aggregation"] == 0
+        assert "BTCUSDT" not in summaries[0].getMessage()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("invalid_basis", [False, True])
+async def test_profiling_logs_early_returns_and_errors(monkeypatch, caplog, invalid_basis):
+    from fastapi import HTTPException
+    monkeypatch.setattr(klines_api.settings, "klines_profiling_enabled", True)
+    caplog.set_level(logging.INFO, logger=klines_api.__name__)
+    monkeypatch.setattr(klines_api, "get_adapter", lambda **kwargs: FakeAdapter())
+    kwargs = dict(request=SimpleNamespace(), exchange="bybit", market="futures",
+                  symbol="PRIVATE_SYMBOL", interval="invalid", price_basis="invalid" if invalid_basis else "trade",
+                  from_ts=None, to_ts=None, limit=10, db=FakeDb())
+    if invalid_basis:
+        with pytest.raises(HTTPException) as exc:
+            await klines_api.get_klines(**kwargs)
+        assert exc.value.status_code == 400
+    else:
+        response = await klines_api.get_klines(**kwargs)
+        assert response.noData
+    assert len(caplog.records) == 1
+    summary = json.loads(caplog.records[0].getMessage())
+    assert summary["total_ms"] >= 0
+    assert summary["stages_ms"]["database_candle_retrieval"] == 0
+    assert "PRIVATE_SYMBOL" not in caplog.records[0].getMessage()

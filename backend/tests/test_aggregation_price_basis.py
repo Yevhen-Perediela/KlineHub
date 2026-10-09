@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import contextmanager
 from decimal import Decimal
 
 import pytest
@@ -85,3 +86,21 @@ async def test_aggregation_uses_only_requested_basis():
     assert mark[0]["close"] == 100.0
     assert trade[0]["close"] == 200.0
     assert db.seen_bases == ["mark", "trade"]
+
+
+@pytest.mark.asyncio
+async def test_aggregation_timing_separates_retrieval_without_changing_query_or_bars():
+    db = BasisSession({"trade": _minute_rows("trade", "200")})
+    stages = []
+    @contextmanager
+    def measure(stage):
+        stages.append(stage)
+        yield
+    kwargs = dict(db=db, exchange="bybit", market="futures", symbol="BTCUSDT",
+                  source_interval="1m", target_interval="1h", from_ts=0, to_ts=0,
+                  limit=10, price_basis="trade")
+    original = await AggregationService.get_aggregated_bars(**kwargs)
+    measured = await AggregationService.get_aggregated_bars(**kwargs, measure=measure)
+    assert measured == original
+    assert stages == ["database_candle_retrieval", "aggregation"]
+    assert db.seen_bases == ["trade", "trade"]

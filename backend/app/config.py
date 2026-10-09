@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     coinmarketcap_api_url: str = "https://pro-api.coinmarketcap.com"
     coinmarketcap_listings_limit: int = 500
 
+    klines_profiling_enabled: bool = False
+
     recent_bars_limit: int = 300
     ws_receive_timeout_sec: int = 60
     ws_ping_interval_sec: int = 20

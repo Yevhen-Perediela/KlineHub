@@ -1,8 +1,14 @@
+import json
+import logging
+import time
+from contextlib import contextmanager
+
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.exceptions import RequestValidationError
 from sqlalchemy.exc import TimeoutError as SQLAlchemyTimeoutError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from ..config import settings
 from ..exchanges.binance_spot import InvalidSpotSymbolError
 from ..exchanges.bybit import InvalidBybitSymbolError
 from ..exchanges.oanda import InvalidOandaInstrumentError
@@ -24,6 +30,7 @@ from ..price_basis import resolve_price_basis
 router = APIRouter(prefix="/api", tags=["api"])
 
 backfill_service = BackfillService(SessionLocal)
+logger = logging.getLogger(__name__)
 
 
 def _parse_int_query(
@@ -99,186 +106,227 @@ async def get_klines(
     limit: str | int | None = Query(default=500),
     db: AsyncSession = Depends(get_db),
 ) -> KlineHistoryResponse:
-    exchange = exchange.lower()
-    market = market.lower()
-    symbol = symbol.upper()
-    from_ts = _parse_int_query(from_ts, field_name="from")
-    to_ts = _parse_int_query(to_ts, field_name="to")
-    limit = _parse_int_query(limit, field_name="limit", default=500, minimum=1, maximum=5000)
+    profiling = settings.klines_profiling_enabled
+    timings = dict.fromkeys((
+        "symbol_resolution", "available_interval_lookup", "pair_validation",
+        "on_demand_tracking", "missing_range_backfill", "database_candle_retrieval",
+        "aggregation", "open_candle_retrieval", "response_preparation",
+    ), 0.0) if profiling else None
+    started = time.perf_counter() if profiling else 0.0
 
-    try:
-        adapter = get_adapter(exchange=exchange, market=market)
-    except ValueError:
-        return KlineHistoryResponse(bars=[], price_basis=None, noData=True)
-    try:
-        resolved_price_basis = resolve_price_basis(
-            exchange=exchange,
-            market=market,
-            requested_price_basis=price_basis,
-        ).value
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-
-    if not is_supported_interval(interval):
-        return KlineHistoryResponse(bars=[], price_basis=resolved_price_basis, noData=True)
-    if exchange in {"bybit", "okx"}:
+    @contextmanager
+    def measure(stage):
+        if not profiling:
+            yield
+            return
+        stage_started = time.perf_counter()
         try:
-            symbol = await adapter.resolve_symbol(market=market, symbol=symbol)  # type: ignore[attr-defined]
-        except OkxRateLimitError as exc:
-            raise HTTPException(status_code=503, detail=str(exc)) from exc
-        except (InvalidBybitSymbolError, InvalidOkxSymbolError, ValueError) as exc:
+            yield
+        finally:
+            timings[stage] += (time.perf_counter() - stage_started) * 1000
+
+    try:
+        exchange = exchange.lower()
+        market = market.lower()
+        symbol = symbol.upper()
+        from_ts = _parse_int_query(from_ts, field_name="from")
+        to_ts = _parse_int_query(to_ts, field_name="to")
+        limit = _parse_int_query(limit, field_name="limit", default=500, minimum=1, maximum=5000)
+
+        try:
+            adapter = get_adapter(exchange=exchange, market=market)
+        except ValueError:
+            with measure("response_preparation"):
+                return KlineHistoryResponse(bars=[], price_basis=None, noData=True)
+        try:
+            resolved_price_basis = resolve_price_basis(
+                exchange=exchange,
+                market=market,
+                requested_price_basis=price_basis,
+            ).value
+        except ValueError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    now_ms = __import__("time").time_ns() // 1_000_000
-    current_open_ts = floor_to_interval_open(now_ms, interval)
-    latest_closed_ts = latest_closed_open_time(now_ms=now_ms, interval=interval)
+        if not is_supported_interval(interval):
+            with measure("response_preparation"):
+                return KlineHistoryResponse(bars=[], price_basis=resolved_price_basis, noData=True)
+        if exchange in {"bybit", "okx"}:
+            with measure("symbol_resolution"):
+                try:
+                    symbol = await adapter.resolve_symbol(market=market, symbol=symbol)  # type: ignore[attr-defined]
+                except OkxRateLimitError as exc:
+                    raise HTTPException(status_code=503, detail=str(exc)) from exc
+                except (InvalidBybitSymbolError, InvalidOkxSymbolError, ValueError) as exc:
+                    raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    if to_ts is None:
-        to_ts = current_open_ts
-    else:
-        to_ts = min(floor_to_interval_open(to_ts, interval), current_open_ts)
+        now_ms = time.time_ns() // 1_000_000
+        current_open_ts = floor_to_interval_open(now_ms, interval)
+        latest_closed_ts = latest_closed_open_time(now_ms=now_ms, interval=interval)
 
-    if from_ts is None:
-        from_ts = to_ts
-        for _ in range(limit - 1):
-            previous = floor_to_interval_open(from_ts - 1, interval)
-            if previous >= from_ts:
-                break
-            from_ts = previous
-    else:
-        from_ts = floor_to_interval_open(from_ts, interval)
+        if to_ts is None:
+            to_ts = current_open_ts
+        else:
+            to_ts = min(floor_to_interval_open(to_ts, interval), current_open_ts)
 
-    if from_ts > to_ts:
-        return KlineHistoryResponse(bars=[], price_basis=resolved_price_basis, noData=True)
+        if from_ts is None:
+            from_ts = to_ts
+            for _ in range(limit - 1):
+                previous = floor_to_interval_open(from_ts - 1, interval)
+                if previous >= from_ts:
+                    break
+                from_ts = previous
+        else:
+            from_ts = floor_to_interval_open(from_ts, interval)
 
-    should_backfill = True
-    preferred_history_interval = adapter.get_history_backfill_interval(interval)
+        if from_ts > to_ts:
+            with measure("response_preparation"):
+                return KlineHistoryResponse(bars=[], price_basis=resolved_price_basis, noData=True)
 
-    try:
-        source_interval = await AggregationService.pick_best_source_interval(
-            db=db,
-            exchange=exchange,
-            market=market,
-            symbol=symbol,
-            target_interval=interval,
-            price_basis=resolved_price_basis,
-        )
-        await db.rollback()
-    except SQLAlchemyTimeoutError as exc:
-        raise HTTPException(status_code=503, detail="database connection pool exhausted") from exc
+        should_backfill = True
+        preferred_history_interval = adapter.get_history_backfill_interval(interval)
 
-    if source_interval == interval:
-        preferred_history_interval = interval
-    elif preferred_history_interval == interval:
-        # Prefer provider-native history for the requested interval over
-        # aggregating from smaller candles that may contain trading-session gaps.
-        source_interval = interval
-    elif source_interval is None:
-        source_interval = get_canonical_interval(
+        with measure("available_interval_lookup"):
+            try:
+                source_interval = await AggregationService.pick_best_source_interval(
+                    db=db,
+                    exchange=exchange,
+                    market=market,
+                    symbol=symbol,
+                    target_interval=interval,
+                    price_basis=resolved_price_basis,
+                )
+                await db.rollback()
+            except SQLAlchemyTimeoutError as exc:
+                raise HTTPException(status_code=503, detail="database connection pool exhausted") from exc
+
+        if source_interval == interval:
+            preferred_history_interval = interval
+        elif preferred_history_interval == interval:
+            # Prefer provider-native history for the requested interval over
+            # aggregating from smaller candles that may contain trading-session gaps.
+            source_interval = interval
+        elif source_interval is None:
+            source_interval = get_canonical_interval(
+                exchange=exchange,
+                market=market,
+                requested_interval=interval,
+            )
+
+        tracking_interval = get_canonical_interval(
             exchange=exchange,
             market=market,
             requested_interval=interval,
         )
+        with measure("pair_validation"):
+            try:
+                await request.app.state.backfill_service.validate_pair(
+                    exchange=exchange,
+                    market=market,
+                    symbol=symbol,
+                    interval=tracking_interval,
+                    price_basis=resolved_price_basis,
+                )
+            except OkxRateLimitError as exc:
+                raise HTTPException(status_code=503, detail=str(exc)) from exc
+            except (InvalidSpotSymbolError, InvalidBybitSymbolError, InvalidOandaInstrumentError, InvalidOkxSymbolError, ValueError) as exc:
+                raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    tracking_interval = get_canonical_interval(
-        exchange=exchange,
-        market=market,
-        requested_interval=interval,
-    )
-    try:
-        await request.app.state.backfill_service.validate_pair(
-            exchange=exchange,
-            market=market,
-            symbol=symbol,
-            interval=tracking_interval,
-            price_basis=resolved_price_basis,
+        with measure("on_demand_tracking"):
+            await request.app.state.on_demand_tracking_service.ensure_pair_tracked(
+                exchange=exchange,
+                market=market,
+                symbol=symbol,
+                interval=tracking_interval,
+                price_basis=resolved_price_basis,
+            )
+
+        source_from = floor_to_interval_open(from_ts, source_interval)
+        history_to_ts = min(to_ts, latest_closed_ts)
+        source_to = floor_to_interval_open(
+            next_interval_open(history_to_ts, interval) - 1,
+            source_interval,
         )
-    except OkxRateLimitError as exc:
-        raise HTTPException(status_code=503, detail=str(exc)) from exc
-    except (InvalidSpotSymbolError, InvalidBybitSymbolError, InvalidOandaInstrumentError, InvalidOkxSymbolError, ValueError) as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    await request.app.state.on_demand_tracking_service.ensure_pair_tracked(
-        exchange=exchange,
-        market=market,
-        symbol=symbol,
-        interval=tracking_interval,
-        price_basis=resolved_price_basis,
-    )
+        if should_backfill and from_ts <= history_to_ts:
+            with measure("missing_range_backfill"):
+                try:
+                    await backfill_service.ensure_range_loaded(
+                        db=db,
+                        exchange=exchange,
+                        market=market,
+                        symbol=symbol,
+                        interval=source_interval,
+                        price_basis=resolved_price_basis,
+                        from_ts=source_from,
+                        to_ts=source_to,
+                    )
+                except OkxRateLimitError as exc:
+                    raise HTTPException(status_code=503, detail=str(exc)) from exc
+                except (InvalidBybitSymbolError, InvalidOkxSymbolError, ValueError) as exc:
+                    raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    source_from = floor_to_interval_open(from_ts, source_interval)
-    history_to_ts = min(to_ts, latest_closed_ts)
-    source_to = floor_to_interval_open(
-        next_interval_open(history_to_ts, interval) - 1,
-        source_interval,
-    )
-
-    if should_backfill and from_ts <= history_to_ts:
-        try:
-            await backfill_service.ensure_range_loaded(
+        if source_interval == interval:
+            with measure("database_candle_retrieval"):
+                bars = await AggregationService.get_bars_from_interval(
+                    db=db,
+                    exchange=exchange,
+                    market=market,
+                    symbol=symbol,
+                    interval=interval,
+                    price_basis=resolved_price_basis,
+                    from_ts=from_ts,
+                    to_ts=history_to_ts,
+                    limit=limit,
+                )
+        else:
+            bars = await AggregationService.get_aggregated_bars(
                 db=db,
                 exchange=exchange,
                 market=market,
                 symbol=symbol,
-                interval=source_interval,
+                source_interval=source_interval,
+                target_interval=interval,
                 price_basis=resolved_price_basis,
-                from_ts=source_from,
-                to_ts=source_to,
+                from_ts=from_ts,
+                to_ts=history_to_ts,
+                limit=limit,
+                measure=measure if profiling else None,
             )
-        except OkxRateLimitError as exc:
-            raise HTTPException(status_code=503, detail=str(exc)) from exc
-        except (InvalidBybitSymbolError, InvalidOkxSymbolError, ValueError) as exc:
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    if source_interval == interval:
-        bars = await AggregationService.get_bars_from_interval(
-            db=db,
-            exchange=exchange,
-            market=market,
-            symbol=symbol,
-            interval=interval,
-            price_basis=resolved_price_basis,
-            from_ts=from_ts,
-            to_ts=history_to_ts,
-            limit=limit,
-        )
-    else:
-        bars = await AggregationService.get_aggregated_bars(
-            db=db,
-            exchange=exchange,
-            market=market,
-            symbol=symbol,
-            source_interval=source_interval,
-            target_interval=interval,
-            price_basis=resolved_price_basis,
-            from_ts=from_ts,
-            to_ts=history_to_ts,
-            limit=limit,
-        )
+        if to_ts >= current_open_ts:
+            with measure("open_candle_retrieval"):
+                try:
+                    open_bar = await OpenCandleService.get_open_bar(
+                        db=db,
+                        exchange=exchange,
+                        market=market,
+                        symbol=symbol,
+                        interval=interval,
+                        price_basis=resolved_price_basis,
+                        current_open_ts=current_open_ts,
+                        now_ms=now_ms,
+                    )
+                except OkxRateLimitError:
+                    open_bar = None
+            with measure("response_preparation"):
+                if open_bar is not None and from_ts <= open_bar["time"] <= to_ts:
+                    bars = [bar for bar in bars if bar["time"] != open_bar["time"]]
+                    bars.append(open_bar)
+                    bars.sort(key=lambda bar: bar["time"])
+                    if len(bars) > limit:
+                        bars = bars[-limit:]
 
-    if to_ts >= current_open_ts:
-        try:
-            open_bar = await OpenCandleService.get_open_bar(
-                db=db,
-                exchange=exchange,
-                market=market,
-                symbol=symbol,
-                interval=interval,
+        with measure("response_preparation"):
+            return KlineHistoryResponse(
+                bars=[KlineBarResponse(**bar) for bar in bars],
                 price_basis=resolved_price_basis,
-                current_open_ts=current_open_ts,
-                now_ms=now_ms,
+                noData=len(bars) == 0,
             )
-        except OkxRateLimitError:
-            open_bar = None
-        if open_bar is not None and from_ts <= open_bar["time"] <= to_ts:
-            bars = [bar for bar in bars if bar["time"] != open_bar["time"]]
-            bars.append(open_bar)
-            bars.sort(key=lambda bar: bar["time"])
-            if len(bars) > limit:
-                bars = bars[-limit:]
 
-    return KlineHistoryResponse(
-        bars=[KlineBarResponse(**bar) for bar in bars],
-        price_basis=resolved_price_basis,
-        noData=len(bars) == 0,
-    )
+    finally:
+        if profiling:
+            logger.info("%s", json.dumps({
+                "event": "klines_timing", "endpoint": "GET /api/klines",
+                "total_ms": round((time.perf_counter() - started) * 1000, 3),
+                "stages_ms": {name: round(value, 3) for name, value in timings.items()},
+            }))
