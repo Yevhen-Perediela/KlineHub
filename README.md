@@ -197,6 +197,24 @@ GET /health
 curl http://127.0.0.1:8088/health
 ```
 
+### OANDA account instruments: `GET /api/oanda/instruments`
+
+Returns the instruments available to the configured OANDA account, using the
+same account instrument cache as symbol validation (default TTL: 900 seconds).
+Optional `market` filter: `forex`, `metals`, or `stocks`.
+
+```bash
+curl "https://klinehub.cryptofromzero.com/api/oanda/instruments"
+curl "https://klinehub.cryptofromzero.com/api/oanda/instruments?market=metals"
+```
+
+Response: `{ "items": [{ "symbol": "XAU_USD", "display_name": "Gold/USD",
+"market": "metals", "type": "METAL", "pip_location": -2,
+"display_precision": 3, "tradeable": true }], "count": 1 }`.
+The example is illustrative; availability depends on the configured account.
+Missing OANDA configuration returns HTTP 503; upstream HTTP or network failures
+return HTTP 502. Invalid market filters return HTTP 422.
+
 ### 7.2 `GET /api/klines`
 
 Returns normalized historical candles for a given exchange, market, symbol, and interval.

@@ -13,6 +13,7 @@ from .api.health import router as health_router
 from .api.stats import router as stats_router
 from .api.pairs import router as pairs_router
 from .api.klines import router as klines_router
+from .api.oanda import router as oanda_router
 from .api.ws import router as ws_router
 from .api.refresh_popular_pairs import router as refresh_popular_pairs_router
 from .schemas import InternalHealthResponse
@@ -154,4 +155,5 @@ app.include_router(stats_router)
 app.include_router(pairs_router)
 app.include_router(refresh_popular_pairs_router)
 app.include_router(klines_router)
+app.include_router(oanda_router)
 app.include_router(ws_router)
