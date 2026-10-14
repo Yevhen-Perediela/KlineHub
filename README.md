@@ -1624,10 +1624,9 @@ its reload and activation tasks. A disconnected HTTP waiter does not cancel an
 activation shared with other requests. Active manual pairs and on-demand expiry
 extension retain their existing behavior.
 
-Stream shutdown now cancels the supervisor immediately, interrupting idle or
-reconnect sleeps. WebSocket cleanup may still take time in the background. The
-existing stop/start reload remains in use, including its existing repair scheduling;
-this change does not implement incremental stream subscription updates.
+Stream shutdown cancels the supervisor immediately, interrupting idle or reconnect
+sleeps. Normal `reload()` now reconciles subscriptions incrementally, as described
+below; global stop/start is available only through `reload(force=True)`.
 
 Enable diagnosis with:
 
@@ -1646,7 +1645,7 @@ The existing `klines_timing` JSON remains unchanged. Additional optional events:
 
 - `on_demand_tracking_timing`: activation lookup, commit, total, outcome, and
   whether a reload was required; shared activations produce one summary.
-- `stream_reload_timing`: stop, start, and total for each reload pass. Start means
+- `stream_reload_timing`: stop, start, and total for an explicit global fallback. Start means
   supervisor task creation, not completed upstream connection establishment.
 - `backfill_timing`: operation, outcome, total, stage durations and call counts.
   It covers range normalization, missing-range SQL, timestamp materialization,
@@ -1661,3 +1660,82 @@ to disabled. Backfill query/order/limits, pagination, Redis writes, exceptions,
 concurrency, and return values are unchanged. Missing history is still loaded
 synchronously for HTTP; an actual slow backfill can therefore still delay the response.
 The optimization removes waiting for reload, not waiting for required history.
+
+## Incremental collector subscriptions
+
+Previously, every stream reload stopped all workers, backfill and reconciliation.
+Now each worker has a stable ID, a desired subscription set, and an upstream
+confirmed set. A serialized diff of active tracked pairs preserves existing worker
+assignments, fills available slots, and creates another bounded worker when needed.
+An unchanged set sends no subscription commands and restarts no workers.
+
+| Provider | Addition/removal | Reconnect |
+| --- | --- | --- |
+| Binance spot/futures | `SUBSCRIBE`/`UNSUBSCRIBE`, correlated numeric ACK | Combined URL rebuilt from latest desired set |
+| Bybit spot/futures TRADE | `subscribe`/`unsubscribe`, correlated ACK; spot batches of at most 10 topics | Latest desired topics subscribed and acknowledged |
+| OKX spot/futures | `subscribe`/`unsubscribe`, ACK required for every argument | Latest desired topics subscribed and acknowledged |
+| OANDA MID | Restart only that market/basis HTTP worker because instruments are part of its URL | Latest instrument list; existing open-candle accumulator retained |
+| Bybit futures MARK | No WebSocket subscription; existing REST path and history repair | Existing REST implementation unchanged |
+
+Protocol references: [Binance](https://developers.binance.com/docs/derivatives/usds-margined-futures/websocket-market-streams/Live-Subscribing-Unsubscribing-to-streams),
+[Bybit](https://bybit-exchange.github.io/docs/v5/ws/connect),
+[OKX](https://app.okx.com/docs-v5/en/),
+[OANDA](https://developer.oanda.com/rest-live-v20/pricing-ep/).
+
+Routing removes subscriptions before awaiting unsubscribe ACKs, so late frames
+cannot update removed pairs. Subscription changes during connection establishment
+are reconciled after the initial connection is ready. Rejected or missing ACKs
+trigger only that worker's reconnect with its latest desired set. Independent
+workers continue collecting. New tracked pairs (including MARK) and reconnects
+request history repair through one coalescing background loop, using the existing
+repair-all implementation. Regular subscription changes do not cancel that loop
+or OANDA reconciliation. Failed repair requests are retried.
+
+Settings (defaults):
+
+```env
+WS_STREAMS_PER_CONNECTION=200
+WS_SUBSCRIPTION_ACK_TIMEOUT_SEC=5
+STREAM_RECONCILE_INTERVAL_SEC=5
+KLINES_PROFILING_ENABLED=false
+```
+
+The supervisor also checks tracked pairs every five seconds to recover missed
+notifications or cancelled reconciliation. Database sessions close before network
+commands. Subscription control messages and connection attempts are throttled
+within the collector process. OKX's 480 control requests/hour/connection budget
+is retained; exhausting it requests a local reconnect rather than a long wait.
+Do not start multiple collector-owning API processes without accounting for shared
+IP connection limits: these throttles are process-local. Existing deployments
+already run one API process per Compose service.
+
+With `KLINES_PROFILING_ENABLED=true`, `subscription_reconcile_timing` records
+`subscription_diff_ms`, `affected_workers`, `added_subscriptions`,
+`removed_subscriptions`, `worker_restart_ms`, `websocket_close_ms`,
+`dynamic_subscribe_ms`, outcome and total. Restart timing covers stopping and
+launching the task, not completion of the new network handshake.
+`websocket_close_timing` records the worker ID and actual close duration on every
+socket cleanup. The existing `close_timeout=10` remains: a failed worker or final
+shutdown may still spend seconds closing, but normal dynamic changes avoid that
+handshake entirely. API `klines_timing` and detailed backfill profiling are retained.
+
+Verification after deployment:
+
+```sh
+docker compose up -d --build api
+docker compose exec -T api python -m pytest -q tests/test_stream_subscriptions.py tests/test_stream_price_basis.py tests/test_on_demand_price_basis.py
+docker compose logs --since=10m api | rg 'subscription_reconcile_timing|websocket_close_timing|Worker .*failed'
+docker compose exec -T api python -c 'import json, urllib.request; d=json.load(urllib.request.urlopen("http://127.0.0.1:8000/internal/ops")); print(json.dumps(d["stream_workers"], indent=2))'
+```
+
+Enable profiling for a controlled canary, record worker IDs, activate one new pair
+through the existing client, and verify its candle updates. Confirm one affected
+worker, one added subscription, no close event for unaffected workers, and fresh
+updates from pre-existing pairs. Pause/expire a test pair and verify removals;
+reactivate it and repeat. Check MARK produces history repair without a new public
+kline subscription. Disable profiling after diagnosis. OANDA changes necessarily
+interrupt the affected market's HTTP connection briefly, and reconnect history
+repair preserves the existing REST reconciliation behavior. Empty workers are
+removed, but partly filled workers are not globally compacted to avoid interrupting
+collection. Production exchange/network timings have not been benchmarked by the
+mocked regression suite. No database migration or index change is needed.

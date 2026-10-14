@@ -14,11 +14,29 @@ class StreamSubscription:
     stream_key: str
 
 
+class SubscriptionError(RuntimeError):
+    pass
+
+
 class ProviderAdapter:
     provider_id: str = ""
     stream_transport: str = "websocket"
     native_kline_stream: bool = True
     canonical_interval: str | None = None
+    dynamic_subscriptions = False
+    max_streams_per_connection = 200
+    connection_interval_sec = 0.0
+    control_interval_sec = 0.5
+    control_requests_per_hour = 0
+
+    def subscription_batch_size(self, market: str) -> int:
+        return 100
+
+    def build_subscription_message(self, operation: str, streams: list[str], request_id: str) -> dict:
+        raise NotImplementedError
+
+    def subscription_ack(self, message: dict, request: dict) -> set[str] | None:
+        return None
 
     def get_history_backfill_interval(self, requested_interval: str) -> str:
         return self.canonical_interval or requested_interval

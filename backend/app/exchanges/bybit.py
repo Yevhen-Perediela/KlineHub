@@ -10,7 +10,7 @@ from ..config import settings
 from ..services.exchange_limit_service import record_http_error, record_http_response
 from ..utils.intervals import latest_closed_open_time, next_interval_open
 from ..price_basis import PriceBasis, resolve_price_basis
-from .base import ProviderAdapter
+from .base import ProviderAdapter, SubscriptionError
 
 
 class InvalidBybitSymbolError(ValueError):
@@ -19,6 +19,27 @@ class InvalidBybitSymbolError(ValueError):
 
 class BybitAdapter(ProviderAdapter):
     provider_id = "bybit"
+    dynamic_subscriptions = True
+    connection_interval_sec = 0.7
+
+    def subscription_batch_size(self, market: str) -> int:
+        return 10 if market == "spot" else 100
+
+    def build_subscription_message(self, operation: str, streams: list[str], request_id: str) -> dict:
+        return {"op": operation, "args": sorted(set(streams)), "req_id": request_id}
+
+    def subscription_ack(self, message: dict, request: dict) -> set[str] | None:
+        if message.get("req_id") != request["req_id"]:
+            return None
+        if message.get("type") == "COMMAND_RESP":
+            if message.get("failTopics"):
+                raise SubscriptionError("Bybit subscription topics rejected")
+            return set(message.get("successTopics", []))
+        if message.get("op") != request["op"]:
+            return None
+        if message.get("success") is not True:
+            raise SubscriptionError("Bybit subscription request rejected")
+        return set(request["args"])
 
     INTERVAL_MAP = {
         "1m": "1",

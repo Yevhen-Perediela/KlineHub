@@ -12,7 +12,7 @@ import httpx
 from ..config import settings
 from ..services.exchange_limit_service import record_http_error, record_http_response
 from ..utils.intervals import latest_closed_open_time, next_interval_open
-from .base import ProviderAdapter
+from .base import ProviderAdapter, SubscriptionError
 from ..price_basis import resolve_price_basis
 
 
@@ -26,6 +26,31 @@ class OkxRateLimitError(ValueError):
 
 class OkxAdapter(ProviderAdapter):
     provider_id = "okx"
+    dynamic_subscriptions = True
+    connection_interval_sec = 0.35
+    control_requests_per_hour = 480
+
+    def build_subscription_message(self, operation: str, streams: list[str], request_id: str) -> dict:
+        args = []
+        for stream in sorted(set(streams)):
+            channel, inst_id = self._parse_stream_key(stream)
+            args.append({"channel": channel, "instId": inst_id})
+        return {"id": request_id, "op": operation, "args": args}
+
+    def subscription_ack(self, message: dict, request: dict) -> set[str] | None:
+        if message.get("id") is not None and message["id"] != request["id"]:
+            return None
+        if message.get("event") == "error":
+            raise SubscriptionError("OKX subscription request rejected")
+        if message.get("event") != request["op"]:
+            return None
+        arg = message.get("arg")
+        if arg not in request["args"]:
+            return None
+        if str(message.get("code", "0")) != "0":
+            raise SubscriptionError("OKX subscription topic rejected")
+        return {f"{arg['channel']}|{arg['instId']}"}
+
     logger = logging.getLogger(__name__)
 
     INTERVAL_MAP = {

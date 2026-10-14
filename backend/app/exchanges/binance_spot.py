@@ -7,7 +7,7 @@ from typing import Any
 import httpx
 
 from ..services.exchange_limit_service import record_http_error, record_http_response
-from .base import ProviderAdapter
+from .base import ProviderAdapter, SubscriptionError
 from ..price_basis import resolve_price_basis
 
 
@@ -15,7 +15,23 @@ class InvalidSpotSymbolError(ValueError):
     pass
 
 
-class BinanceSpotAdapter(ProviderAdapter):
+class BinanceSubscriptionMixin:
+    dynamic_subscriptions = True
+    max_streams_per_connection = 1024
+    connection_interval_sec = 1.1
+
+    def build_subscription_message(self, operation: str, streams: list[str], request_id: str) -> dict:
+        return {"method": operation.upper(), "params": sorted(set(streams)), "id": int(request_id)}
+
+    def subscription_ack(self, message: dict, request: dict) -> set[str] | None:
+        if message.get("id") != request["id"]:
+            return None
+        if "code" in message or ("result" in message and message["result"] is not None):
+            raise SubscriptionError("Binance subscription request rejected")
+        return set(request["params"]) if "result" in message else None
+
+
+class BinanceSpotAdapter(BinanceSubscriptionMixin, ProviderAdapter):
     provider_id = "binance_spot"
 
     REST_BASE_URL = "https://api.binance.com"

@@ -12,10 +12,11 @@ from ..services.exchange_limit_service import record_http_error, record_http_res
 from ..state import runtime_state
 from ..utils.intervals import latest_closed_open_time
 from .base import ProviderAdapter
+from .binance_spot import BinanceSubscriptionMixin
 from ..price_basis import resolve_price_basis
 
 
-class BinanceFuturesAdapter(ProviderAdapter):
+class BinanceFuturesAdapter(BinanceSubscriptionMixin, ProviderAdapter):
     provider_id = "binance_futures"
     BASE_WS_URL = "wss://fstream.binance.com/stream"
     _instrument_cache: tuple[float, list[dict[str, Any]]] | None = None

@@ -110,7 +110,7 @@ async def test_cancelled_reload_does_not_restart_streams():
             pass  # Worker cleanup can absorb a cancellation.
     manager.stop = stop
     manager.start = AsyncMock()
-    task = asyncio.create_task(manager.reload())
+    task = asyncio.create_task(manager.reload(force=True))
     await entered.wait()
     task.cancel()
     with pytest.raises(asyncio.CancelledError):

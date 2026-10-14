@@ -1,3 +1,4 @@
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -21,6 +22,9 @@ class Settings(BaseSettings):
     bybit_mark_open_cache_ttl_sec: float = 2.0
 
     recent_bars_limit: int = 300
+    ws_streams_per_connection: int = Field(default=200, ge=1)
+    ws_subscription_ack_timeout_sec: float = Field(default=5.0, gt=0)
+    stream_reconcile_interval_sec: float = Field(default=5.0, gt=0)
     ws_receive_timeout_sec: int = 60
     ws_ping_interval_sec: int = 20
     ws_ping_timeout_sec: int = 20
