@@ -142,6 +142,46 @@ async def test_dynamic_add_remove_and_noop_keep_unrelated_workers(harness, excha
 
 
 @pytest.mark.asyncio
+async def test_metal_polling_add_remove_preserves_other_workers(harness, monkeypatch):
+    manager, desired, sockets = harness
+    adapter = get_adapter(exchange="binance", market="metals")
+    fetch = AsyncMock(return_value=[])
+    monkeypatch.setattr(adapter, "fetch_klines", fetch)
+    manager.backfill_service.repair_missing_for_pair = AsyncMock()
+    original = subscription("binance", "metals", "XAUUSDT", "index")
+    added = subscription("binance", "metals", "XAGUSDT", "index")
+    unrelated = subscription()
+    desired[:] = [original, unrelated]
+    try:
+        await manager.reload()
+        await eventually(lambda: all(w.ready for w in manager._workers.values()))
+        worker = next(w for w in manager._workers.values() if original in w.spec.subscriptions)
+        other = next(w for w in manager._workers.values() if unrelated in w.spec.subscriptions)
+        task, other_task, socket = worker.task, other.task, other.websocket
+        desired.append(added)
+        await manager.reload()
+        await eventually(lambda: all(w.ready for w in manager._workers.values()))
+        added_worker = next(w for w in manager._workers.values() if added in w.spec.subscriptions)
+        assert added_worker is not worker
+        assert worker.task is task and other.task is other_task and other.websocket is socket
+        assert len(sockets) == 1  # metals own no futures trade WebSocket
+        added_task = added_worker.task
+        await manager.reload()
+        assert worker.task is task and added_worker.task is added_task
+        desired[:] = [added, unrelated]
+        await manager.reload()
+        assert task.done() and worker.worker_id not in manager._workers
+        assert added_worker.task is added_task and other.task is other_task and not socket.closed
+        desired[:] = [unrelated]
+        await manager.reload()
+        assert added_task.done() and added_worker.worker_id not in manager._workers
+        assert other.task is other_task and not socket.closed
+        assert {call.kwargs["symbol"] for call in fetch.await_args_list} == {"XAUUSDT", "XAGUSDT"}
+    finally:
+        await manager.stop()
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize("failure", ["rejected", "timeout", "disconnect"])
 async def test_failure_reconnects_only_affected_worker_and_restores_latest_set(harness, failure):
     manager, desired, sockets = harness

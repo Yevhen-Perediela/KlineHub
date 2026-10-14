@@ -309,6 +309,11 @@ class OpenCandleService:
                     interval=interval,
                     current_open_ts=current_open_ts,
                 )
+            elif exchange == "binance" and market == "metals":
+                events = await get_adapter(exchange=exchange, market=market).fetch_klines(
+                    market=market, symbol=symbol, interval=interval, price_basis=price_basis,
+                    start_time=current_open_ts, end_time=now_ms, limit=2, include_open=True,
+                )
             elif exchange == "bybit" and interval == "3d":
                 return await cls._get_rest_aggregated_open_bar(
                     exchange=exchange,

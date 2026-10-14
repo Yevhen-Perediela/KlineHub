@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import time
 from typing import Any
@@ -10,10 +11,14 @@ import httpx
 from ..config import settings
 from ..services.exchange_limit_service import record_http_error, record_http_response
 from ..state import runtime_state
-from ..utils.intervals import latest_closed_open_time
+from ..utils.intervals import is_supported_interval, latest_closed_open_time
 from .base import ProviderAdapter
 from .binance_spot import BinanceSubscriptionMixin
-from ..price_basis import resolve_price_basis
+from ..price_basis import PriceBasis, resolve_price_basis
+
+
+class InvalidBinanceMetalSymbolError(ValueError):
+    pass
 
 
 class BinanceFuturesAdapter(BinanceSubscriptionMixin, ProviderAdapter):
@@ -74,14 +79,16 @@ class BinanceFuturesAdapter(BinanceSubscriptionMixin, ProviderAdapter):
         limit: int = 300,
         start_time: int | None = None,
         end_time: int | None = None,
+        include_open: bool = False,
     ) -> list[dict[str, Any]]:
         basis = resolve_price_basis(
             exchange="binance", market=market, requested_price_basis=price_basis
         )
+        is_index = basis is PriceBasis.INDEX
         params: dict[str, Any] = {
-            "symbol": symbol.upper(),
+            "pair" if is_index else "symbol": symbol.upper(),
             "interval": interval,
-            "limit": limit,
+            "limit": min(limit or 300, 1500) if is_index else limit,
         }
 
         if start_time is not None:
@@ -89,21 +96,25 @@ class BinanceFuturesAdapter(BinanceSubscriptionMixin, ProviderAdapter):
         if end_time is not None:
             params["endTime"] = end_time
 
-        url = f"{settings.binance_futures_rest_url}/fapi/v1/klines"
+        endpoint = "indexPriceKlines" if is_index else "klines"
+        url = f"{settings.binance_futures_rest_url}/fapi/v1/{endpoint}"
 
-        async with aiohttp.ClientSession() as session:
-            try:
-                async with session.get(url, params=params, timeout=30) as response:
-                    runtime_state.record_exchange_http_response(
-                        exchange="binance",
-                        status_code=int(response.status),
-                        headers=dict(response.headers),
-                    )
-                    response.raise_for_status()
-                    payload = await response.json()
-            except Exception as exc:
-                record_http_error(exchange="binance", error=exc)
-                raise
+        if is_index:
+            payload = await self._fetch_index_payload(url, params)
+        else:
+            async with aiohttp.ClientSession() as session:
+                try:
+                    async with session.get(url, params=params, timeout=30) as response:
+                        runtime_state.record_exchange_http_response(
+                            exchange="binance",
+                            status_code=int(response.status),
+                            headers=dict(response.headers),
+                        )
+                        response.raise_for_status()
+                        payload = await response.json()
+                except Exception as exc:
+                    record_http_error(exchange="binance", error=exc)
+                    raise
 
         if not isinstance(payload, list):
             return []
@@ -116,13 +127,17 @@ class BinanceFuturesAdapter(BinanceSubscriptionMixin, ProviderAdapter):
         result: list[dict[str, Any]] = []
 
         for item in payload:
-            if not isinstance(item, list) or len(item) < 11:
+            if not isinstance(item, list) or len(item) < (7 if is_index else 11):
                 continue
 
             open_time = int(item[0])
             close_time = int(item[6])
+            is_closed = close_time < self._now_ms() if is_index else True
 
-            if open_time > safe_latest_closed_open:
+            if is_index and not include_open and not is_closed:
+                continue
+
+            if not is_index and open_time > safe_latest_closed_open:
                 continue
 
             result.append(
@@ -137,9 +152,9 @@ class BinanceFuturesAdapter(BinanceSubscriptionMixin, ProviderAdapter):
                     "high": str(item[2]),
                     "low": str(item[3]),
                     "close": str(item[4]),
-                    "volume": str(item[5]),
-                    "is_closed": True,
-                    "trades_count": int(item[8]) if item[8] is not None else None,
+                    "volume": "0" if is_index else str(item[5]),
+                    "is_closed": is_closed,
+                    "trades_count": None if is_index else (int(item[8]) if item[8] is not None else None),
                     "stream": None,
                     "source": "rest",
                     "price_basis": basis.value,
@@ -195,3 +210,104 @@ class BinanceFuturesAdapter(BinanceSubscriptionMixin, ProviderAdapter):
             raise ValueError(f"Unknown Binance futures symbol: {symbol}")
         if instrument["status"] != "TRADING":
             raise ValueError(f"Binance futures instrument {symbol.upper()} is not tradable")
+
+
+class BinanceMetalsAdapter(BinanceFuturesAdapter):
+    """Metal reference indices; no futures trade or mark-price candles."""
+
+    provider_id = "binance_metals"
+    stream_transport = "rest_poll"
+    native_kline_stream = False
+    dynamic_subscriptions = False
+    max_streams_per_connection = 1
+    max_kline_limit = 1500
+    METALS = {
+        "XAUUSDT": "Gold",
+        "XAGUSDT": "Silver",
+        "XPTUSDT": "Platinum",
+        "XPDUSDT": "Palladium",
+    }
+
+    def __init__(self) -> None:
+        self._index_request_lock = asyncio.Lock()
+        self._discovery_lock = asyncio.Lock()
+        self._next_index_request_at = 0.0
+        self._metals_cache: tuple[float, list[dict[str, Any]]] | None = None
+
+    @staticmethod
+    def build_stream_name(symbol: str, interval: str) -> str:
+        return f"{symbol.upper()}:index:{interval}"
+
+    async def _fetch_index_payload(self, url: str, params: dict) -> Any:
+        # Share pacing across polling, discovery and backfills on this adapter.
+        async with self._index_request_lock:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                for attempt in range(3):
+                    delay = self._next_index_request_at - time.monotonic()
+                    if delay > 0:
+                        await asyncio.sleep(delay)
+                    limit = int(params["limit"])
+                    weight = 1 if limit < 100 else 2 if limit < 500 else 5 if limit <= 1000 else 10
+                    self._next_index_request_at = time.monotonic() + max(0.2, weight / 20)
+                    try:
+                        response = await client.get(url, params=params)
+                    except httpx.RequestError as exc:
+                        record_http_error(exchange="binance", error=exc)
+                        if attempt == 2:
+                            raise
+                        self._next_index_request_at = time.monotonic() + 2 ** attempt
+                        continue
+                    record_http_response(exchange="binance", response=response)
+                    if response.status_code == 400 and response.json().get("code") == -1121:
+                        raise InvalidBinanceMetalSymbolError(f"Binance metal index is unavailable: {params['pair']}")
+                    if response.status_code in {418, 429} or response.status_code >= 500:
+                        retry_after = response.headers.get("Retry-After")
+                        try:
+                            delay = max(float(retry_after or 0), 2 ** attempt)
+                        except ValueError:
+                            delay = 2 ** attempt
+                        self._next_index_request_at = time.monotonic() + delay
+                        if attempt < 2:
+                            continue
+                    response.raise_for_status()
+                    return response.json()
+
+    async def fetch_klines(self, **kwargs) -> list[dict[str, Any]]:
+        if kwargs["market"] != "metals":
+            raise ValueError("Binance metal indices require market=metals")
+        if kwargs["symbol"].upper() not in self.METALS:
+            raise InvalidBinanceMetalSymbolError(f"Unknown Binance metal index: {kwargs['symbol']}")
+        if not is_supported_interval(kwargs["interval"]):
+            raise ValueError(f"Unsupported Binance metals interval: {kwargs['interval']}")
+        return await super().fetch_klines(**kwargs)
+
+    async def list_instruments(self) -> list[dict[str, Any]]:
+        async with self._discovery_lock:
+            now = time.time()
+            if self._metals_cache is not None and now - self._metals_cache[0] < 900:
+                return self._metals_cache[1]
+            instruments = await super().list_instruments()
+            supported = []
+            for item in instruments:
+                symbol = item["symbol"]
+                if symbol not in self.METALS or item["status"] != "TRADING":
+                    continue
+                try:
+                    candles = await self.fetch_klines(market="metals", symbol=symbol, interval="1m",
+                                                     limit=1, include_open=True)
+                except InvalidBinanceMetalSymbolError:
+                    continue
+                if candles:
+                    supported.append({**item, "display_name": self.METALS[symbol],
+                                      "market": "metals", "price_basis": "index"})
+            self._metals_cache = (now, supported)
+            return supported
+
+    async def validate_symbol(self, *, market: str, symbol: str, interval: str) -> None:
+        if not is_supported_interval(interval):
+            raise ValueError(f"Unsupported Binance metals interval: {interval}")
+        if symbol.upper() not in self.METALS:
+            raise InvalidBinanceMetalSymbolError(f"Unknown Binance metal index: {symbol}")
+        instruments = await self.list_instruments()
+        if not any(item["symbol"] == symbol.upper() for item in instruments):
+            raise InvalidBinanceMetalSymbolError(f"Binance metal index is unavailable: {symbol}")

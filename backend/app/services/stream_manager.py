@@ -260,6 +260,8 @@ class StreamManager:
                     self._workers.pop(worker.worker_id, None)
                 elif worker.task is None or worker.task.done():
                     worker.task = asyncio.create_task(self._run_worker(worker), name=f"stream-worker-{worker.worker_id}")
+                elif worker.spec.adapter.stream_transport == "rest_poll":
+                    worker.confirmed = set(worker.spec.subscriptions)
                 elif worker.spec.adapter.dynamic_subscriptions:
                     if worker.ready:
                         phase = time.perf_counter()
@@ -326,9 +328,12 @@ class StreamManager:
         backoff = settings.ws_reconnect_min_sec
         while not self._stop_event.is_set() and worker.spec.subscriptions:
             try:
-                await self._throttle_connection(worker.spec.adapter)
+                if worker.spec.adapter.stream_transport != "rest_poll":
+                    await self._throttle_connection(worker.spec.adapter)
                 if worker.spec.adapter.stream_transport == "websocket":
                     await self._run_websocket_worker(worker)
+                elif worker.spec.adapter.stream_transport == "rest_poll":
+                    await self._run_rest_poll_worker(worker)
                 else:
                     await self._run_http_stream_worker(worker)
                 backoff = settings.ws_reconnect_min_sec
@@ -341,6 +346,57 @@ class StreamManager:
             if not self._stop_event.is_set() and worker.spec.subscriptions:
                 await asyncio.sleep(backoff)
                 backoff = min(backoff * 2, settings.ws_reconnect_max_sec)
+
+    async def _run_rest_poll_worker(self, worker: ActiveWorker) -> None:
+        last_closed: dict[StreamSubscription, int] = {}
+        # Repair before newer polls advance the database tail (also on reconnect).
+        for sub in list(worker.spec.subscriptions):
+            await self.backfill_service.repair_missing_for_pair(
+                exchange=sub.exchange, market=sub.market, symbol=sub.symbol,
+                interval=sub.interval, price_basis=sub.price_basis,
+            )
+        worker.confirmed = set(worker.spec.subscriptions)
+        self._connected(worker)
+        try:
+            while not self._stop_event.is_set() and worker.spec.subscriptions:
+                for sub in list(worker.spec.subscriptions):
+                    events = await worker.spec.adapter.fetch_klines(
+                        market=sub.market, symbol=sub.symbol, interval=sub.interval,
+                        price_basis=sub.price_basis, limit=3, include_open=True,
+                    )
+                    for event in sorted(events, key=lambda item: int(item["open_time"])):
+                        if sub not in worker.spec.subscriptions or self._stop_event.is_set():
+                            break
+                        open_time = int(event["open_time"])
+                        previous = last_closed.get(sub)
+                        if previous is not None and open_time <= previous:
+                            continue
+                        if previous is not None and open_time > next_interval_open(previous, sub.interval):
+                            async with self.session_factory() as session:
+                                await self.backfill_service.ensure_range_loaded(
+                                    db=session, exchange=sub.exchange, market=sub.market,
+                                    symbol=sub.symbol, interval=sub.interval, price_basis=sub.price_basis,
+                                    from_ts=next_interval_open(previous, sub.interval), to_ts=open_time - 1,
+                                )
+                        runtime_state.ws_last_message_at = datetime.now(timezone.utc)
+                        runtime_state.last_kline_event = {
+                            **event, "exchange": sub.exchange, "market": sub.market,
+                        }
+                        await self._publish_native_kline(
+                            exchange=sub.exchange, market=sub.market, symbol=sub.symbol,
+                            interval=sub.interval, price_basis=sub.price_basis, event=event,
+                        )
+                        if event["is_closed"]:
+                            last_closed[sub] = open_time
+                try:
+                    await asyncio.wait_for(self._stop_event.wait(),
+                                           timeout=settings.binance_metals_poll_interval_sec)
+                except asyncio.TimeoutError:
+                    pass
+        finally:
+            worker.ready = False
+            worker.confirmed.clear()
+            self._publish_worker_state()
 
     def _connected(self, worker: ActiveWorker) -> None:
         worker.ready = True

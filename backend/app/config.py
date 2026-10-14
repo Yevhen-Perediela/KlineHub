@@ -38,6 +38,7 @@ class Settings(BaseSettings):
     chart_ws_max_message_bytes: int = 64 * 1024
 
     binance_futures_rest_url: str = "https://fapi.binance.com"
+    binance_metals_poll_interval_sec: float = Field(default=5.0, ge=1)
     bybit_rest_url: str = "https://api.bybit.com"
     bybit_ws_url: str = "wss://stream.bybit.com"
     bybit_instruments_cache_ttl_sec: int = 900

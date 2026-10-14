@@ -1,5 +1,6 @@
 /.env
 /venv
+node_modules/
 backend/app/__pycache__/__init__.cpython-312.pyc
 backend/app/__pycache__/config.cpython-312.pyc
 backend/app/__pycache__/db.cpython-312.pyc

@@ -68,7 +68,7 @@ type TrackedPair = {
   market: string;
   symbol: string;
   interval: string;
-  price_basis: "trade" | "mark" | "mid";
+  price_basis: "trade" | "mark" | "mid" | "index";
   status: string;
   source: string;
   priority: number;
@@ -134,7 +134,7 @@ type OperationalOps = {
     market: string;
     symbol: string;
     interval: string;
-    price_basis: "trade" | "mark" | "mid";
+    price_basis: "trade" | "mark" | "mid" | "index";
     status: string;
     source: string;
     last_closed_open_time?: number | null;
@@ -198,7 +198,7 @@ const defaultForm: FormState = {
 };
 
 const exchangeOptions = ["bybit", "binance", "oanda"];
-const marketOptions = ["spot", "futures", "forex"];
+const marketOptions = ["spot", "futures", "forex", "metals"];
 const intervalOptions = ["1m", "3m", "5m", "15m", "30m", "1h", "2h", "4h", "6h", "12h", "1d", "3d", "1w", "1M"];
 
 function formatDate(value?: string | null) {
@@ -393,9 +393,19 @@ export default function KlineHubMonitorDashboard() {
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
   const [form, setForm] = useState<FormState>(defaultForm);
+  const [binanceMetals, setBinanceMetals] = useState<{ symbol: string; display_name: string }[]>([]);
   const [refreshDryRun, setRefreshDryRun] = useState(false);
   const [refreshMode, setRefreshMode] = useState<"pause" | "delete">("pause");
   const [refreshResult, setRefreshResult] = useState<RefreshPopularPairsResponse | null>(null);
+
+  useEffect(() => {
+    if (!authenticated || form.exchange !== "binance" || form.market !== "metals") return;
+    let active = true;
+    fetchJson<{ items: { symbol: string; display_name: string }[] }>("/api/binance/metals")
+      .then((result) => { if (active) setBinanceMetals(result.items); })
+      .catch((err) => { if (active) setError(err instanceof Error ? err.message : "Failed to load Binance metals"); });
+    return () => { active = false; };
+  }, [authenticated, form.exchange, form.market]);
 
   const loadAll = async () => {
     setError("");
@@ -998,7 +1008,10 @@ export default function KlineHubMonitorDashboard() {
                     </option>
                   ))}
                 </select>
-                <input value={form.symbol} onChange={(e) => setForm((s) => ({ ...s, symbol: e.target.value.toUpperCase() }))} className="rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-cyan-400/30" placeholder="symbol" />
+                <input value={form.symbol} list={form.exchange === "binance" && form.market === "metals" ? "binance-metals" : undefined} onChange={(e) => setForm((s) => ({ ...s, symbol: e.target.value.toUpperCase() }))} className="rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-cyan-400/30" placeholder="symbol" />
+                <datalist id="binance-metals">
+                  {binanceMetals.map((metal) => <option key={metal.symbol} value={metal.symbol}>{metal.display_name}</option>)}
+                </datalist>
                 <select
                   value={form.interval}
                   onChange={(e) => setForm((s) => ({ ...s, interval: e.target.value }))}
@@ -1012,6 +1025,10 @@ export default function KlineHubMonitorDashboard() {
                 </select>
                 <input value={form.backfill_limit} onChange={(e) => setForm((s) => ({ ...s, backfill_limit: e.target.value }))} className="rounded-2xl border border-white/10 bg-slate-950/70 px-4 py-3 text-white outline-none placeholder:text-slate-500 focus:border-cyan-400/30 md:col-span-2" placeholder="backfill limit" />
               </div>
+
+              {form.exchange === "binance" && form.market === "metals" ? (
+                <p className="mt-3 text-sm text-slate-400">Indicative metal index prices (USDT). Volume is zero; these are reference prices.</p>
+              ) : null}
 
               <button
                 onClick={submitAddPair}

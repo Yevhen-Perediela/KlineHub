@@ -29,7 +29,7 @@ class TrackedPairCreate(BaseModel):
     market: str = Field(..., examples=["futures", "spot", "forex"])
     symbol: str = Field(..., examples=["BTCUSDT", "BTC-USDT-SWAP"])
     interval: str = Field(default="1h", examples=["1h"])
-    price_basis: Literal["trade", "mark", "mid"] | None = None
+    price_basis: Literal["trade", "mark", "mid", "index"] | None = None
     source: str = Field(default="api")
     priority: int = Field(default=100, ge=0)
     backfill_limit: int | None = Field(default=None, ge=1, le=1000)
@@ -41,7 +41,7 @@ class TrackedPairResponse(BaseModel):
     market: str
     symbol: str
     interval: str
-    price_basis: Literal["trade", "mark", "mid"]
+    price_basis: Literal["trade", "mark", "mid", "index"]
     status: str
     source: str
     priority: int
@@ -93,7 +93,7 @@ class KlineBarResponse(BaseModel):
 
 class KlineHistoryResponse(BaseModel):
     bars: list[KlineBarResponse]
-    price_basis: Literal["trade", "mark", "mid"] | None = None
+    price_basis: Literal["trade", "mark", "mid", "index"] | None = None
     noData: bool
 
 
@@ -180,7 +180,7 @@ class RefreshPopularPairsItem(BaseModel):
     market: str
     symbol: str
     interval: str
-    price_basis: Literal["trade", "mark", "mid"]
+    price_basis: Literal["trade", "mark", "mid", "index"]
     action: str
     reason: str | None = None
     status: str | None = None

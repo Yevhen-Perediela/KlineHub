@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from ..config import settings
 from ..exchanges.binance_spot import InvalidSpotSymbolError
+from ..exchanges.binance_futures import InvalidBinanceMetalSymbolError
 from ..exchanges.bybit import InvalidBybitSymbolError
 from ..exchanges.oanda import InvalidOandaInstrumentError
 from ..exchanges.okx import InvalidOkxSymbolError
@@ -230,7 +231,7 @@ class BackfillService:
                         price_basis=price_basis,
                         limit=limit,
                     )
-                except (InvalidSpotSymbolError, InvalidBybitSymbolError, InvalidOandaInstrumentError, InvalidOkxSymbolError):
+                except (InvalidBinanceMetalSymbolError, InvalidSpotSymbolError, InvalidBybitSymbolError, InvalidOandaInstrumentError, InvalidOkxSymbolError):
                     logger.warning(
                         "Invalid instrument in recent backfill: %s %s %s %s",
                         exchange,
@@ -439,7 +440,7 @@ class BackfillService:
                         )
                         repaired_values.append(repaired)
 
-                    except (InvalidSpotSymbolError, InvalidBybitSymbolError, InvalidOandaInstrumentError, InvalidOkxSymbolError):
+                    except (InvalidBinanceMetalSymbolError, InvalidSpotSymbolError, InvalidBybitSymbolError, InvalidOandaInstrumentError, InvalidOkxSymbolError):
                         logger.warning(
                             "Pair %s %s %s %s is invalid. Pausing it.",
                             pair.exchange,
@@ -576,7 +577,8 @@ class BackfillService:
             while chunk_start <= end_open_time:
                 with measure("chunk_planning"):
                     remaining_count = count_interval_steps(chunk_start, end_open_time, interval)
-                    limit = min(max(1, remaining_count), settings.max_backfill_limit)
+                    limit = min(max(1, remaining_count), settings.max_backfill_limit,
+                                getattr(adapter, "max_kline_limit", settings.max_backfill_limit))
                     chunk_end = chunk_start
                     for _ in range(limit - 1):
                         next_open = next_interval_open(chunk_end, interval)
@@ -607,7 +609,7 @@ class BackfillService:
                             end_time=next_interval_open(chunk_end, interval) - 1,
                             limit=limit,
                         )
-                    except (InvalidSpotSymbolError, InvalidBybitSymbolError, InvalidOandaInstrumentError, InvalidOkxSymbolError):
+                    except (InvalidBinanceMetalSymbolError, InvalidSpotSymbolError, InvalidBybitSymbolError, InvalidOandaInstrumentError, InvalidOkxSymbolError):
                         logger.warning(
                             "Invalid instrument while fetching range: %s %s %s %s",
                             exchange,

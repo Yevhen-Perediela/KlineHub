@@ -20,7 +20,7 @@ class TrackedPair(Base):
     __tablename__ = "tracked_pairs"
     __table_args__ = (
         CheckConstraint(
-            "price_basis IN ('trade', 'mark', 'mid')",
+            "price_basis IN ('trade', 'mark', 'mid', 'index')",
             name="ck_tracked_pairs_price_basis",
         ),
         UniqueConstraint(
@@ -59,7 +59,7 @@ class Candle(Base):
     __tablename__ = "candles"
     __table_args__ = (
         CheckConstraint(
-            "price_basis IN ('trade', 'mark', 'mid')",
+            "price_basis IN ('trade', 'mark', 'mid', 'index')",
             name="ck_candles_price_basis",
         ),
         UniqueConstraint(

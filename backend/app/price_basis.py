@@ -7,6 +7,7 @@ class PriceBasis(str, Enum):
     TRADE = "trade"
     MARK = "mark"
     MID = "mid"
+    INDEX = "index"
 
 
 _SUPPORTED_BASES: dict[tuple[str, str], frozenset[PriceBasis]] = {
@@ -16,6 +17,7 @@ _SUPPORTED_BASES: dict[tuple[str, str], frozenset[PriceBasis]] = {
     ("okx", "futures"): frozenset({PriceBasis.TRADE}),
     ("binance", "spot"): frozenset({PriceBasis.TRADE}),
     ("binance", "futures"): frozenset({PriceBasis.TRADE}),
+    ("binance", "metals"): frozenset({PriceBasis.INDEX}),
     ("oanda", "forex"): frozenset({PriceBasis.MID}),
     ("oanda", "metals"): frozenset({PriceBasis.MID}),
     ("oanda", "stocks"): frozenset({PriceBasis.MID}),
@@ -28,6 +30,7 @@ _DEFAULT_BASES: dict[tuple[str, str], PriceBasis] = {
     ("okx", "futures"): PriceBasis.TRADE,
     ("binance", "spot"): PriceBasis.TRADE,
     ("binance", "futures"): PriceBasis.TRADE,
+    ("binance", "metals"): PriceBasis.INDEX,
     ("oanda", "forex"): PriceBasis.MID,
     ("oanda", "metals"): PriceBasis.MID,
     ("oanda", "stocks"): PriceBasis.MID,

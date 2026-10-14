@@ -215,6 +215,72 @@ The example is illustrative; availability depends on the configured account.
 Missing OANDA configuration returns HTTP 503; upstream HTTP or network failures
 return HTTP 502. Invalid market filters return HTTP 422.
 
+### Binance metal indices: `GET /api/binance/metals`
+
+Returns `{ "items": [...], "count": 4 }` for currently available metal indices.
+Discovery checks Binance Futures exchange information and verifies index candles;
+the result is cached for 15 minutes. Candidate symbols are `XAUUSDT` (gold),
+`XAGUSDT` (silver), `XPTUSDT` (platinum), and `XPDUSDT` (palladium). All four
+returned index candles when checked on 2026-10-14; availability is checked at
+runtime, rather than assumed. Upstream HTTP/network failures return HTTP 502.
+
+Use `exchange=binance`, `market=metals`, and `price_basis=index` (the default
+for this market) with the existing candle, tracked-pair, and chart WebSocket APIs.
+These are indicative reference prices in USDT, not spot trades or futures mark
+prices. Volume is `0` and trades count is absent. OANDA metals remain separate
+under `exchange=oanda`, `price_basis=mid`.
+
+```bash
+curl "https://klinehub.cryptofromzero.com/api/binance/metals"
+curl "https://klinehub.cryptofromzero.com/api/klines?exchange=binance&market=metals&symbol=XAUUSDT&interval=1h&price_basis=index&limit=500"
+
+curl -X POST "http://127.0.0.1:8088/internal/pairs" \
+  -H "Content-Type: application/json" \
+  -d '{"exchange":"binance","market":"metals","symbol":"XAUUSDT","interval":"1m","price_basis":"index"}'
+```
+
+Existing pause, reactivate, and delete operations apply to these pairs. The Add
+pair form includes `metals` and suggests symbols from the discovery endpoint.
+Existing Binance `spot` and `futures` still default to traded prices.
+
+History uses `/fapi/v1/indexPriceKlines` with `pair`, `interval`, `startTime`,
+`endTime`, and `limit`, through the existing missing-range detection and upsert
+logic. All configured intervals (`1m` through `1M`, including `3d`) are supported.
+Binance caps each response at 1500 candles. Request weight is 1 below 100 candles,
+2 below 500, 5 for 500–1000, and 10 above 1000; the existing configured backfill
+limit defaults to 1000. History starts only when Binance began publishing that
+index; missing earlier history cannot be reconstructed.
+
+USDⓈ-M has no documented index-kline WebSocket. Within the existing stream
+manager, active metal pairs poll the latest three index candles every
+`BINANCE_METALS_POLL_INTERVAL_SEC` (default 5 seconds, minimum 1). Each pair and
+interval has its own worker; incremental reload starts/stops only the affected
+workers. Open candles go to the existing Redis/realtime pipeline and closed
+candles to the existing PostgreSQL upsert. Startup/reconnect repairs history
+before writing a newer tail, and detected polling gaps use the existing range
+backfill. Requests share adapter pacing (minimum 200 ms apart, increased for
+heavier backfill pages to cap index traffic at 1200 weight/minute); transient
+network/5xx failures retry up to three attempts, and 418/429 honor `Retry-After`.
+These limits share the server's Binance IP budget with other Binance markets.
+
+Before starting the updated API against an existing database, expand the two
+price-basis CHECK constraints explicitly:
+
+```bash
+docker compose run --rm --no-deps api python -m app.price_basis_migration index-schema
+```
+
+This idempotent command preserves rows, tables, unique constraints, and indexes.
+It uses a short lock timeout when replacing the checks, then validates them
+separately while ordinary reads/writes remain possible. Validation may scan the
+candle table; rerun if lock acquisition times out. Fresh databases use the
+existing `python -m app.price_basis_migration schema` command. Startup verifies
+the schema and does not run this migration automatically.
+
+Binance documentation:
+[index candles](https://developers.binance.com/docs/derivatives/usds-margined-futures/market-data/rest-api/Index-Price-Kline-Candlestick-Data),
+[USDⓈ-M market streams](https://developers.binance.com/docs/derivatives/usds-margined-futures/websocket-market-streams).
+
 ### 7.2 `GET /api/klines`
 
 Returns normalized historical candles for a given exchange, market, symbol, and interval.

@@ -59,7 +59,7 @@ def _schema_problems(sync_conn) -> list[str]:
         checks = inspector.get_check_constraints(table)
         if not any(
             "price_basis" in c["sqltext"] and all(
-                f"'{v}'" in c["sqltext"] for v in ("trade", "mark", "mid")
+                f"'{v}'" in c["sqltext"] for v in ("trade", "mark", "mid", "index")
             ) for c in checks
         ):
             problems.append(f"missing price_basis check on {table}")
@@ -98,7 +98,8 @@ async def verify_price_basis_schema(conn: AsyncConnection) -> None:
     if problems:
         raise RuntimeError(
             "Database schema is not ready: " + "; ".join(problems)
-            + ". Run explicit schema setup (python -m app.price_basis_migration schema); "
+            + ". For existing tables run python -m app.price_basis_migration index-schema; "
+            "for fresh databases run python -m app.price_basis_migration schema; "
             "existing incomplete schemas require operator review. Startup never migrates data."
         )
 
@@ -117,6 +118,32 @@ async def setup_schema() -> None:
             await conn.run_sync(Base.metadata.create_all)
         await verify_price_basis_schema(conn)
         await conn.execute(text(STATE_DDL))
+
+
+async def upgrade_index_schema() -> None:
+    """Expand only the two basis checks; preserve rows, unique keys and indexes."""
+    for table in TABLES:
+        name = f"ck_{table}_price_basis"
+        async with engine.begin() as conn:
+            await set_timeouts(conn)
+            checks = await conn.run_sync(lambda c: inspect(c).get_check_constraints(table))
+            old = next((check for check in checks if check["name"] == name), None)
+            if old is None:
+                raise RuntimeError(f"Missing expected constraint {name}; review schema before upgrading")
+            if "'index'" not in old["sqltext"]:
+                await conn.execute(text(f"ALTER TABLE {table} DROP CONSTRAINT {name}"))
+                await conn.execute(text(
+                    f"ALTER TABLE {table} ADD CONSTRAINT {name} "
+                    "CHECK (price_basis IN ('trade', 'mark', 'mid', 'index')) NOT VALID"
+                ))
+        # Validation can scan a large candle table. It permits normal reads/writes
+        # and runs separately from the short exclusive lock used above.
+        async with engine.begin() as conn:
+            await conn.execute(text("SET LOCAL lock_timeout = '500ms'"))
+            await conn.execute(text("SET LOCAL statement_timeout = '0'"))
+            await conn.execute(text(f"ALTER TABLE {table} VALIDATE CONSTRAINT {name}"))
+    async with engine.begin() as conn:
+        await verify_price_basis_schema(conn)
 
 
 @dataclass(frozen=True)
@@ -249,7 +276,7 @@ def install_stop_handlers(stop: asyncio.Event) -> None:
 
 async def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("mode", choices=("schema", "migrate", "audit"))
+    parser.add_argument("mode", choices=("schema", "index-schema", "migrate", "audit"))
     parser.add_argument("--batch-size", type=int, default=1000)
     parser.add_argument("--delay", type=float, default=2)
     parser.add_argument("--busy-delay", type=float, default=15)
@@ -263,6 +290,8 @@ async def main() -> None:
     try:
         if args.mode == "schema":
             await setup_schema()
+        elif args.mode == "index-schema":
+            await upgrade_index_schema()
         else:
             await run_worker(args.mode, stop, WorkerOptions(
                 args.batch_size, args.delay, args.busy_delay, args.max_active))

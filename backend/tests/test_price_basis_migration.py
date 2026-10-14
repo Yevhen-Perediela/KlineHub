@@ -241,7 +241,7 @@ def test_migrated_schema_recognized_without_ddl(monkeypatch):
     inspector.has_table.return_value = True
     inspector.get_columns.return_value = [dict(name='price_basis', nullable=False),
                                           dict(name='auto_stop_at', nullable=True)]
-    inspector.get_check_constraints.return_value = [dict(sqltext="price_basis IN ('trade', 'mark', 'mid')")]
+    inspector.get_check_constraints.return_value = [dict(sqltext="price_basis IN ('trade', 'mark', 'mid', 'index')")]
     inspector.get_indexes.return_value = []
     inspector.get_unique_constraints.side_effect = [
         [dict(column_names=['exchange', 'market', 'symbol', 'interval', 'price_basis'])],
@@ -258,6 +258,28 @@ def test_maintenance_has_no_candle_mutations_or_unbounded_updates():
     assert 'UPDATE tracked_pairs' not in source
     assert 'OFFSET' not in source
     assert 'WHERE task = :task' in source
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("already_upgraded", [False, True])
+async def test_index_schema_expands_checks_without_touching_data_or_indexes(monkeypatch, already_upgraded):
+    conn = Connection()
+    conn.run_sync = AsyncMock(side_effect=[
+        [dict(name=f"ck_{table}_price_basis", sqltext=(
+            "price_basis IN ('trade', 'mark', 'mid', 'index')" if already_upgraded
+            else "price_basis IN ('trade', 'mark', 'mid')"))]
+        for table in migration.TABLES
+    ])
+    monkeypatch.setattr(migration, "engine", Mock(begin=conn.begin))
+    verify = AsyncMock()
+    monkeypatch.setattr(migration, "verify_price_basis_schema", verify)
+    await migration.upgrade_index_schema()
+    statements = [sql for sql, _ in conn.sql]
+    assert sum("DROP CONSTRAINT" in sql for sql in statements) == (0 if already_upgraded else 2)
+    assert sum("NOT VALID" in sql for sql in statements) == (0 if already_upgraded else 2)
+    assert sum("VALIDATE CONSTRAINT" in sql for sql in statements) == 2
+    assert not any("UPDATE" in sql or "CREATE INDEX" in sql or "UNIQUE" in sql for sql in statements)
+    verify.assert_awaited_once_with(conn)
 
 
 @pytest.mark.asyncio
