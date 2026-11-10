@@ -18,7 +18,7 @@ from ..exchanges.oanda import InvalidOandaInstrumentError
 from ..exchanges.okx import InvalidOkxSymbolError
 from ..exchanges.registry import get_adapter, get_canonical_interval
 from ..models import TrackedPair
-from ..price_basis import resolve_price_basis
+from ..price_basis import resolve_price_basis, volume_availability
 from ..state import runtime_state
 from ..utils.intervals import is_supported_interval
 from .backfill_service import BackfillService
@@ -536,7 +536,8 @@ class ChartConnectionSession:
                 "type": "snapshot",
                 "request_id": request_id,
                 "stream": stream.as_dict(),
-                "data": snapshot,
+                "data": {**snapshot, "is_closed": None,
+                         "volume_available": volume_availability(stream.exchange, stream.price_basis)},
             }
         )
         logger.info(
@@ -613,7 +614,18 @@ class ChartConnectionSession:
                 "low": float(event["low"]),
                 "close": float(event["close"]),
                 "volume": float(event["volume"]),
+                "is_closed": (event.get("is_closed") if type(event.get("is_closed")) is bool else None),
+                "volume_available": volume_availability(stream["exchange"], stream["price_basis"]),
             }
+            # Binance index polling derives its internal flag from the clock.
+            if event.get("finality_known") is False or (
+                stream["exchange"] == "binance" and stream["price_basis"] == "index"
+            ):
+                data["is_closed"] = None
+            if stream["exchange"] == "oanda":
+                data["volume_available"] = False
+            elif stream["exchange"] == "bybit" and stream["price_basis"] == "trade":
+                data["volume_available"] = event.get("volume_available")
         except (KeyError, TypeError, ValueError):
             return
 

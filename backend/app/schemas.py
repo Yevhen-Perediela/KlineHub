@@ -89,6 +89,8 @@ class KlineBarResponse(BaseModel):
     low: float
     close: float
     volume: float
+    is_closed: bool | None = None
+    volume_available: bool | None = None
 
 
 class KlineHistoryResponse(BaseModel):

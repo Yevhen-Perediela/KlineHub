@@ -144,3 +144,52 @@ async def test_profiling_logs_early_returns_and_errors(monkeypatch, caplog, inva
     assert summary["total_ms"] >= 0
     assert summary["stages_ms"]["database_candle_retrieval"] == 0
     assert "PRIVATE_SYMBOL" not in caplog.records[0].getMessage()
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("exchange,basis,source,expected,volume_available", [
+    ("oanda", "mid", "1m", True, None),
+    ("bybit", "mark", "1m", None, False),
+    ("binance", "index", "1m", None, False),
+    ("binance", "trade", "1m", None, True),
+])
+async def test_history_finality_and_volume_metadata(monkeypatch, exchange, basis, source, expected, volume_available):
+    fake_backfill = FakeBackfill()
+    request = SimpleNamespace(app=SimpleNamespace(state=SimpleNamespace(
+        backfill_service=fake_backfill, on_demand_tracking_service=FakeOnDemand())))
+    async def pick(**kwargs):
+        return source
+    async def bars(**kwargs):
+        return [dict(time=1_700_000_000_000, open=1, high=1, low=1, close=1, volume=0)]
+    async def no_open(**kwargs):
+        return None
+    monkeypatch.setattr(klines_api, "get_adapter", lambda **kwargs: FakeAdapter())
+    monkeypatch.setattr(klines_api.AggregationService, "pick_best_source_interval", pick)
+    monkeypatch.setattr(klines_api.AggregationService, "get_bars_from_interval", bars)
+    monkeypatch.setattr(klines_api.OpenCandleService, "get_open_bar", no_open)
+    monkeypatch.setattr(klines_api.backfill_service, "ensure_range_loaded", fake_backfill.ensure_range_loaded)
+    market = "forex" if exchange == "oanda" else "metals" if basis == "index" else "futures"
+    response = await klines_api.get_klines(request=request, exchange=exchange, market=market,
+        symbol="EUR_USD" if exchange == "oanda" else "BTCUSDT", interval="1m", price_basis=basis,
+        from_ts=1_700_000_000_000, to_ts=1_700_000_000_000, limit=10, db=FakeDb())
+    assert response.bars[0].is_closed is expected
+    assert response.bars[0].volume_available is volume_available
+    assert response.bars[0].volume == 0
+
+
+@pytest.mark.asyncio
+async def test_current_bar_has_unknown_finality(monkeypatch):
+    fake = FakeBackfill()
+    request = SimpleNamespace(app=SimpleNamespace(state=SimpleNamespace(
+        backfill_service=fake, on_demand_tracking_service=FakeOnDemand())))
+    async def pick(**kwargs): return "1m"
+    async def bars(**kwargs): return []
+    async def open_bar(**kwargs):
+        return dict(time=kwargs["current_open_ts"], open=1, high=1, low=1, close=1, volume=0)
+    monkeypatch.setattr(klines_api, "get_adapter", lambda **kwargs: FakeAdapter())
+    monkeypatch.setattr(klines_api.AggregationService, "pick_best_source_interval", pick)
+    monkeypatch.setattr(klines_api.AggregationService, "get_bars_from_interval", bars)
+    monkeypatch.setattr(klines_api.OpenCandleService, "get_open_bar", open_bar)
+    monkeypatch.setattr(klines_api.backfill_service, "ensure_range_loaded", fake.ensure_range_loaded)
+    response = await klines_api.get_klines(request=request, exchange="oanda", market="forex",
+        symbol="EUR_USD", interval="1m", price_basis="mid", from_ts=None, to_ts=None, limit=1, db=FakeDb())
+    assert response.bars[0].is_closed is None

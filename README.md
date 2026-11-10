@@ -323,6 +323,29 @@ GET /api/klines
 - Auto-pausing an on-demand pair stops live streaming only; stored candles remain in PostgreSQL and Redis.
 - If an open candle exists in Redis for the requested interval, it is appended or replaces the same timestamp in the response.
 
+#### Candle metadata
+
+Each REST bar and chart WebSocket candle includes additive `is_closed` and
+`volume_available` fields. Both can be `true`, `false`, or `null` (unknown).
+`is_closed` reports confirmed finality, not merely an elapsed interval. REST
+returns `true` only for stored native OANDA 1m history: those bars are either
+provider-complete or closed by the local tick-candle rollover. Aggregated bars,
+other historical sources, and current bars return `null`: storage flags alone
+are insufficient because some history adapters infer them from the clock.
+
+Chart updates forward authoritative exchange close flags, or OANDA's local
+rollover flag. Binance index polling infers its internal flag from time, so
+its public status is `null`. Redis snapshots do not retain the status and
+therefore also report `null`.
+
+`volume` remains numeric for existing clients. `volume_available=false` marks
+synthetic volume for Binance index and Bybit mark feeds, and OANDA live tick
+candles. For OANDA REST bars and snapshots it is `null`, since stored provider
+tick volume and synthetic live values cannot be reliably distinguished. Bybit
+trade history and snapshots also report `null`: a live event without volume
+may have been stored as zero. Live Bybit trade events report availability from
+the event itself. A zero with `volume_available=true` remains a real zero.
+
 #### Aggregation behavior
 
 - Binance, Bybit, and OKX can provide direct native intervals for backfill where the provider adapter supports the requested interval.

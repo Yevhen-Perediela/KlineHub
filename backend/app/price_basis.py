@@ -70,3 +70,13 @@ def resolve_price_basis(
 def classify_existing_price_basis(*, exchange: str, market: str) -> PriceBasis:
     """Return the legacy default; this is not provenance for an existing row."""
     return resolve_price_basis(exchange=exchange, market=market)
+
+
+def volume_availability(exchange: str, price_basis: str) -> bool | None:
+    """Whether a stored value represents provider volume for this feed."""
+    if (exchange, price_basis) in {("binance", "index"), ("bybit", "mark")}:
+        return False
+    if exchange in {"oanda", "bybit"}:
+        # OANDA mixes tick and synthetic volume; Bybit WS can default a missing value to zero.
+        return None
+    return True

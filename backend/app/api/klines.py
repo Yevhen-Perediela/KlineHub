@@ -25,7 +25,7 @@ from ..utils.intervals import (
     is_supported_interval,
     next_interval_open,
 )
-from ..price_basis import resolve_price_basis
+from ..price_basis import resolve_price_basis, volume_availability
 
 router = APIRouter(prefix="/api", tags=["api"])
 
@@ -319,8 +319,12 @@ async def get_klines(
                         bars = bars[-limit:]
 
         with measure("response_preparation"):
+            volume_known = volume_availability(exchange, resolved_price_basis)
+            # OANDA 1m storage contains provider-complete or locally rolled-over bars.
+            confirmed_history = exchange == "oanda" and source_interval == interval == "1m"
             return KlineHistoryResponse(
-                bars=[KlineBarResponse(**bar) for bar in bars],
+                bars=[KlineBarResponse(**bar, is_closed=True if confirmed_history and bar["time"] < current_open_ts else None,
+                                       volume_available=volume_known) for bar in bars],
                 price_basis=resolved_price_basis,
                 noData=len(bars) == 0,
             )

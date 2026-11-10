@@ -355,3 +355,27 @@ async def test_normalize_bybit_futures_default_and_trade_channels(monkeypatch):
     assert trade.price_basis == "trade"
     assert trade.channel.endswith(":trade")
     assert mark != trade
+
+@pytest.mark.parametrize("status", [True, False, None])
+def test_chart_kline_finality_and_volume_metadata(status):
+    session, _, _ = make_session()
+    stream = StreamKey("bybit", "spot", "BTCUSDT", "1m", "trade")
+    session.subscriptions.add(stream)
+    event = dict(open_time=123, open="1", high="1", low="1", close="1", volume="0", is_closed=status, volume_available=True)
+    session.enqueue_kline(channel=stream.channel, stream=stream.as_dict(), event=event)
+    data = session._queue.get_nowait()["data"]
+    assert data["is_closed"] is status
+    assert data["volume"] == 0
+    assert data["volume_available"] is True
+
+
+def test_chart_index_poll_does_not_claim_clock_finality_or_volume():
+    session, _, _ = make_session()
+    stream = StreamKey("binance", "metals", "XAUUSDT", "1m", "index")
+    session.subscriptions.add(stream)
+    session.enqueue_kline(channel=stream.channel, stream=stream.as_dict(), event=dict(
+        open_time=123, open="1", high="1", low="1", close="1", volume="0", is_closed=True))
+    data = session._queue.get_nowait()["data"]
+    assert data["is_closed"] is None
+    assert data["volume"] == 0
+    assert data["volume_available"] is False

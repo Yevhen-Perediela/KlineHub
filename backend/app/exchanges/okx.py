@@ -342,6 +342,7 @@ class OkxAdapter(ProviderAdapter):
             "close": str(row[4]),
             "volume": str(row[5]),
             "is_closed": is_closed,
+            "finality_known": len(row) > 8 and confirm in {"0", "1"},
             "source": source,
         }
 

@@ -118,7 +118,8 @@ class BybitAdapter(ProviderAdapter):
             "low": str(kline.get("low")),
             "close": str(kline.get("close")),
             "volume": str(kline.get("volume", "0")),
-            "is_closed": bool(kline.get("confirm")),
+            "volume_available": kline.get("volume") is not None,
+            "is_closed": kline.get("confirm") if type(kline.get("confirm")) is bool else None,
             "turnover": str(kline.get("turnover", "0")),
             "timestamp": kline.get("timestamp"),
         }
