@@ -1846,3 +1846,13 @@ repair preserves the existing REST reconciliation behavior. Empty workers are
 removed, but partly filled workers are not globally compacted to avoid interrupting
 collection. Production exchange/network timings have not been benchmarked by the
 mocked regression suite. No database migration or index change is needed.
+
+### Public instrument catalogue: `GET /api/instruments`
+
+Returns the current provider instrument catalogue for all supported exchange and market combinations. Optional `exchange` and `market` query parameters filter the results; an unsupported exchange or combination returns HTTP 400. For example:
+
+```bash
+curl "http://127.0.0.1:8088/api/instruments?exchange=okx&market=futures"
+```
+
+The response is `{"items": [...], "count": 1}`. Each item has `exchange`, `market`, the provider's native `symbol`, `base_asset`, `quote_asset`, and boolean `available`. Unavailable instruments are included; assets may be `null` when the provider does not supply them. For OANDA, the asset fields come from the underscore-separated instrument name and its catalogue depends on the configured account. Binance metals are limited to supported index instruments. The existing provider caches determine freshness. An upstream failure returns 502; missing OANDA configuration returns 503, including on an unfiltered request. Filter by another exchange when OANDA is not configured.
